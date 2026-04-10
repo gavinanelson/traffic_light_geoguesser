@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Traffic Cam Review</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="header">
+          <div>
+            <p class="kicker">Traffic Cam Review</p>
+            <h1 id="title">Loading...</h1>
+          </div>
+          <p id="progress" class="progress"></p>
+        </div>
+
+        <img id="image" class="image" alt="Traffic cam candidate" />
+
+        <div class="meta">
+          <p id="location"></p>
+          <p id="coords"></p>
+          <p id="scores"></p>
+        </div>
+
+        <div class="actions">
+          <button id="approve" class="approve">✓ Use image</button>
+          <button id="reject" class="reject">✕ Reject image</button>
+        </div>
+
+        <p class="shortcuts">Keyboard: A = approve, X = reject</p>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+  </html>
+

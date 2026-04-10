@@ -1,0 +1,88 @@
+<h2>Shift Screen Layout</h2>
+<p class="subtitle">The main gameplay screen — analog dispatch desk aesthetic</p>
+
+<div class="mockup">
+  <div class="mockup-header">Shift Screen — Desktop Layout</div>
+  <div class="mockup-body" style="padding:0;background:#2a1f14;font-family:'Courier New',monospace;">
+
+    <!-- HUD Bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#1a1208;border-bottom:2px solid #3d2e1a;color:#c4a97d;font-size:12px;letter-spacing:0.05em;">
+      <span>SCORE: <b style="color:#e8d5b0;font-size:14px;">12,400</b></span>
+      <span>TIME: <b style="color:#e8d5b0;font-size:14px;">2:34</b></span>
+      <span>VERIFIED: <b style="color:#e8d5b0;font-size:14px;">7</b></span>
+      <span>STREAK: <b style="color:#d4a24e;font-size:14px;">3 🔥</b></span>
+      <span style="color:#8a7454;font-style:italic;font-size:11px;">Dispatch: verify all intersections before handoff</span>
+    </div>
+
+    <!-- Two Panel Layout -->
+    <div style="display:flex;min-height:400px;">
+
+      <!-- Left Panel: Packet Photo -->
+      <div style="flex:0 0 45%;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2a1f14;">
+
+        <!-- Manila Envelope -->
+        <div style="background:#c4a862;border-radius:4px;padding:3px;box-shadow:4px 4px 12px rgba(0,0,0,0.5);transform:rotate(-0.5deg);max-width:340px;width:100%;">
+          <div style="padding:8px 10px 4px;font-family:'Courier New',monospace;font-size:11px;color:#3d2e1a;display:flex;justify-content:space-between;">
+            <span><b>PKT-0742</b></span>
+            <span style="color:#6b5530;">PRIORITY</span>
+          </div>
+
+          <!-- Photo area -->
+          <div style="background:#1a1208;margin:0 6px 6px;padding:8px;border-radius:2px;">
+            <div style="background:#4a5a4a;height:200px;display:flex;align-items:center;justify-content:center;border-radius:2px;position:relative;overflow:hidden;">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(194,168,98,0.03) 2px,rgba(194,168,98,0.03) 4px);"></div>
+              <span style="color:#8a9a8a;font-size:13px;font-family:'Courier New',monospace;">[ traffic camera image ]</span>
+            </div>
+          </div>
+
+          <!-- Stamp -->
+          <div style="padding:4px 10px 8px;text-align:right;">
+            <span style="font-family:'Courier New',monospace;font-size:10px;color:#8b0000;border:2px solid #8b0000;padding:2px 6px;transform:rotate(-3deg);display:inline-block;letter-spacing:0.1em;opacity:0.7;">UNVERIFIED</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Panel: World Map -->
+      <div style="flex:1;background:#1e2a1e;position:relative;display:flex;flex-direction:column;">
+
+        <!-- Map area -->
+        <div style="flex:1;background:#253025;display:flex;align-items:center;justify-content:center;position:relative;border-left:2px solid #3d2e1a;">
+          <!-- Grid overlay -->
+          <div style="position:absolute;inset:0;background:
+            linear-gradient(rgba(74,90,74,0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(74,90,74,0.3) 1px, transparent 1px);
+            background-size: 40px 40px;"></div>
+
+          <!-- Continents suggestion -->
+          <div style="color:#4a6a4a;font-size:12px;font-family:'Courier New',monospace;text-align:center;z-index:1;">
+            [ Leaflet world map ]<br><br>
+            <span style="font-size:11px;color:#3a5a3a;">click anywhere to place guess pin</span>
+          </div>
+
+          <!-- Example pin -->
+          <div style="position:absolute;top:35%;left:55%;width:12px;height:12px;background:#d4a24e;border-radius:50%;border:2px solid #1a1208;box-shadow:0 0 8px rgba(212,162,78,0.5);z-index:2;"></div>
+        </div>
+
+        <!-- Confirm bar -->
+        <div style="padding:10px 16px;background:#1a1208;border-top:2px solid #3d2e1a;border-left:2px solid #3d2e1a;display:flex;justify-content:flex-end;align-items:center;gap:12px;">
+          <span style="color:#8a7454;font-size:11px;font-family:'Courier New',monospace;">Pin placed — confirm when ready</span>
+          <div style="background:#8b0000;color:#e8d5b0;padding:8px 20px;font-family:'Courier New',monospace;font-size:13px;letter-spacing:0.1em;border:1px solid #a04040;cursor:pointer;text-transform:uppercase;">
+            Log Location
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top:24px;">
+  <h3>Key Elements</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;color:#b0b0b0;">
+    <div><b style="color:#c4a862;">HUD bar</b> — score, timer, verified count, streak across the top</div>
+    <div><b style="color:#c4a862;">Manila packet</b> — photo wrapped in envelope with PKT ID and UNVERIFIED stamp</div>
+    <div><b style="color:#c4a862;">World map</b> — dark/muted tiles, click to place pin, grid overlay</div>
+    <div><b style="color:#c4a862;">Confirm bar</b> — LOG LOCATION button appears after pin placement</div>
+  </div>
+</div>

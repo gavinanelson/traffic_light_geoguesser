@@ -1,0 +1,33 @@
+{
+  "name": "traffic_light_geoguesser",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "tsx review-app/server.ts",
+    "lint": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "ingest": "tsx scripts/ingest-windy.ts",
+    "score-images": "tsx scripts/score-images.ts",
+    "export-rounds": "tsx scripts/export-approved.ts",
+    "review-app": "tsx review-app/server.ts"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.17",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}
