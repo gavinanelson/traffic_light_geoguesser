@@ -1,15 +1,23 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import type { Round, RoundFeedback } from "../../lib/game/types";
+import type { GameMode, Round, RoundFeedback } from "../../lib/game/types";
+import austinRounds from "../../data/rounds-austin.json";
+
+export const AUSTIN_BOUNDS: [[number, number], [number, number]] = [
+  [30.08, -98.08],
+  [30.55, -97.48],
+];
 
 export type WorldMapProps = {
   rounds: Round[];
   roundResults: RoundFeedback[];
   selectedId: string | null;
   onSelectMarker: (id: string) => void;
+  mode?: GameMode;
+  viewMode?: "camera" | "recovered";
 };
 
 function markerState(
@@ -19,6 +27,10 @@ function markerState(
   const result = roundResults.find((r) => r.correctId === round.id);
   if (!result) return "unguessed";
   return result.correct ? "correct" : "incorrect";
+}
+
+function isRestored(round: Round, roundResults: RoundFeedback[]): boolean {
+  return round.restored === true || roundResults.some((result) => result.correct && result.correctId === round.id);
 }
 
 /** Convert two-finger trackpad scroll into pan. Ctrl+scroll zooms. */
@@ -48,9 +60,21 @@ function TrackpadPan() {
   return null;
 }
 
-function FitBoundsOnce({ rounds }: { rounds: Round[] }) {
+function FitBoundsOnce({
+  rounds,
+  fitToBounds,
+  fitKey,
+}: {
+  rounds: Round[];
+  fitToBounds?: [[number, number], [number, number]];
+  fitKey: string;
+}) {
   const map = useMap();
   const fitted = useRef(false);
+
+  useEffect(() => {
+    fitted.current = false;
+  }, [fitKey]);
 
   useEffect(() => {
     // Leaflet can initialize with wrong dimensions if the container was
@@ -60,10 +84,15 @@ function FitBoundsOnce({ rounds }: { rounds: Round[] }) {
     return () => clearTimeout(t);
   }, [map]);
 
-  if (!fitted.current && rounds.length > 0) {
-    fitted.current = true;
-    const bounds = rounds.map((r) => [r.lat, r.lng] as [number, number]);
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 });
+  if (!fitted.current) {
+    if (fitToBounds) {
+      fitted.current = true;
+      map.fitBounds(fitToBounds, { padding: [40, 40], maxZoom: 13 });
+    } else if (rounds.length > 0) {
+      fitted.current = true;
+      const bounds = rounds.map((r) => [r.lat, r.lng] as [number, number]);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 });
+    }
   }
   return null;
 }
@@ -73,31 +102,55 @@ export default function WorldMap({
   roundResults,
   selectedId,
   onSelectMarker,
+  mode = "global",
+  viewMode = "camera",
 }: WorldMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isAustin = mode === "austin";
+  const isRecoveredView = isAustin && viewMode === "recovered";
+  const activeRoundId = rounds[0]?.id ?? null;
+
+  const displayRounds = useMemo(() => {
+    if (!isAustin) return rounds;
+
+    const merged = new Map<string, Round>();
+    for (const round of austinRounds as Round[]) {
+      merged.set(round.id, round);
+    }
+    for (const round of rounds) {
+      merged.set(round.id, round);
+    }
+    return [...merged.values()];
+  }, [isAustin, rounds]);
 
   // Sort: guessed first (bottom of SVG), unguessed last (top, clickable)
   const sorted = useMemo(() => {
-    return [...rounds].sort((a, b) => {
+    return [...displayRounds].sort((a, b) => {
+      if (isAustin && !isRecoveredView) {
+        const aPriority = a.id === activeRoundId ? 2 : 1;
+        const bPriority = b.id === activeRoundId ? 2 : 1;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+      }
+
       const aState = markerState(a, roundResults);
       const bState = markerState(b, roundResults);
       if (aState === "unguessed" && bState !== "unguessed") return 1;
       if (aState !== "unguessed" && bState === "unguessed") return -1;
       return 0;
     });
-  }, [rounds, roundResults]);
+  }, [displayRounds, roundResults, isAustin, isRecoveredView, activeRoundId]);
 
   return (
     <div className="map-container">
       <MapContainer
-        center={[30, 10]}
-        zoom={2}
+        center={isAustin ? [30.285, -97.735] : [30, 10]}
+        zoom={isAustin ? 11 : 2}
         minZoom={2}
         style={{ width: "100%", height: "100%", background: "#000" }}
         zoomControl={false}
         attributionControl={false}
         worldCopyJump={true}
-        maxBounds={[[-85, -Infinity], [85, Infinity]]}
+        maxBounds={isAustin ? AUSTIN_BOUNDS : [[-85, -Infinity], [85, Infinity]]}
         maxBoundsViscosity={1.0}
         scrollWheelZoom={false}
         touchZoom={true}
@@ -110,14 +163,61 @@ export default function WorldMap({
           updateWhenZooming={false}
           updateWhenIdle={false}
         />
-        <FitBoundsOnce rounds={rounds} />
+        <FitBoundsOnce
+          rounds={displayRounds}
+          fitToBounds={isAustin ? AUSTIN_BOUNDS : undefined}
+          fitKey={`${mode}-${viewMode}-${displayRounds.length}`}
+        />
         <TrackpadPan />
 
         {sorted.map((round) => {
           const state = markerState(round, roundResults);
           const isSelected = selectedId === round.id;
           const isHovered = hoveredId === round.id;
-          const clickable = state === "unguessed";
+          const isActiveAustinRound = isAustin && round.id === activeRoundId;
+          const restored = isRestored(round, roundResults);
+          const clickable = isAustin
+            ? !isRecoveredView && isActiveAustinRound
+            : state === "unguessed";
+
+          if (isAustin) {
+            const radius = isActiveAustinRound || isSelected || isHovered ? 11 : 7;
+            const color = restored ? "#66b66e" : isActiveAustinRound ? "#e8d5b0" : "#6f7a78";
+            const fillColor = restored ? "#4a7a4a" : isActiveAustinRound ? "#d4a24e" : "#414947";
+            const fillOpacity = restored ? 0.85 : isActiveAustinRound ? 0.95 : 0.32;
+            const weight = isActiveAustinRound ? 2.5 : 1;
+
+            return (
+              <CircleMarker
+                key={`${round.id}-${isRecoveredView ? "recovered" : "camera"}-${restored ? "restored" : "unrestored"}`}
+                center={[round.lat, round.lng]}
+                radius={radius}
+                color={color}
+                fillColor={fillColor}
+                fillOpacity={fillOpacity}
+                weight={weight}
+                interactive={clickable}
+                bubblingMouseEvents={false}
+                eventHandlers={
+                  clickable
+                    ? {
+                        click: () => onSelectMarker(round.id),
+                        mouseover: () => setHoveredId(round.id),
+                        mouseout: () => setHoveredId(null),
+                      }
+                    : undefined
+                }
+              >
+                {clickable && (isSelected || isHovered) && (
+                  <Tooltip permanent direction="top" offset={[0, -14]}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+                      {round.city}, {round.country}
+                    </span>
+                  </Tooltip>
+                )}
+              </CircleMarker>
+            );
+          }
 
           if (!clickable) {
             // Guessed markers: small, non-interactive (key includes state to force remount)

@@ -28,6 +28,7 @@ export default function ShiftScreen({
 }: ShiftScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
+  const [mapView, setMapView] = useState<"camera" | "recovered">("camera");
 
   // Track which photo is sliding off (by key) so we can show next underneath
   const [slidingOffKey, setSlidingOffKey] = useState<string | null>(null);
@@ -39,12 +40,19 @@ export default function ShiftScreen({
   const remainingCount = state.rounds.length - visualIndex;
   const isAustin = state.mode === "austin";
   const isAustinLocked = isAustin && austinRoundLocked;
+  const isRecoveredView = isAustin && mapView === "recovered";
 
   useEffect(() => {
-    if (isAustinLocked) {
+    if (isAustinLocked || isRecoveredView) {
       setSelectedId(null);
     }
-  }, [isAustinLocked]);
+  }, [isAustinLocked, isRecoveredView]);
+
+  useEffect(() => {
+    if (!isAustin) {
+      setMapView("camera");
+    }
+  }, [isAustin]);
 
   const handleIntroComplete = useCallback(() => {
     setShowIntro(false);
@@ -55,7 +63,7 @@ export default function ShiftScreen({
     if (!selectedId) return;
 
     if (isAustin) {
-      if (isAustinLocked) return;
+      if (isAustinLocked || isRecoveredView) return;
       dispatch({ type: "SUBMIT_GUESS", chosenId: selectedId });
       setSelectedId(null);
       return;
@@ -78,7 +86,7 @@ export default function ShiftScreen({
       setSlidingOffKey(null);
       setVisualIndex(nextIndexRef.current);
     }, 350);
-  }, [selectedId, dispatch, visualIndex, state.rounds, isAustin, isAustinLocked]);
+  }, [selectedId, dispatch, visualIndex, state.rounds, isAustin, isAustinLocked, isRecoveredView]);
 
   const handleDismiss = useCallback(() => {
     if (isAustin) {
@@ -154,14 +162,45 @@ export default function ShiftScreen({
           }}
         >
           <div style={{ flex: 1, position: "relative" }}>
+            {isAustin && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  padding: "12px 16px 0",
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  zIndex: 5,
+                }}
+              >
+                <button
+                  className={`btn ${mapView === "camera" ? "btn-primary" : ""}`}
+                  type="button"
+                  onClick={() => setMapView("camera")}
+                >
+                  Map Current Camera
+                </button>
+                <button
+                  className={`btn ${mapView === "recovered" ? "btn-primary" : ""}`}
+                  type="button"
+                  onClick={() => setMapView("recovered")}
+                >
+                  Recovered Network
+                </button>
+              </div>
+            )}
+
             <WorldMapLoader
               rounds={state.rounds}
               roundResults={state.roundResults}
-              selectedId={selectedId}
+              selectedId={isRecoveredView ? null : selectedId}
               onSelectMarker={(id) => {
-                if (isAustinLocked) return;
+                if (isAustinLocked || isRecoveredView) return;
                 setSelectedId(id);
               }}
+              mode={state.mode}
+              viewMode={mapView}
             />
 
             {state.feedback && (
@@ -205,16 +244,18 @@ export default function ShiftScreen({
             }}
           >
             <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>
-              {selectedId
-                ? <>Selected: <strong style={{ color: "var(--text-primary)" }}>
-                    {state.rounds.find((r) => r.id === selectedId)?.city},{" "}
-                    {state.rounds.find((r) => r.id === selectedId)?.country}
-                  </strong></>
-                : "Click a marker to select a location"}
+              {isRecoveredView
+                ? "Recovered Network view is read-only"
+                : selectedId
+                  ? <>Selected: <strong style={{ color: "var(--text-primary)" }}>
+                      {state.rounds.find((r) => r.id === selectedId)?.city},{" "}
+                      {state.rounds.find((r) => r.id === selectedId)?.country}
+                    </strong></>
+                  : "Click a marker to select a location"}
             </span>
             <button
               className="btn btn-primary"
-              disabled={!selectedId || slidingOffKey !== null || showIntro || isAustinLocked}
+              disabled={!selectedId || slidingOffKey !== null || showIntro || isAustinLocked || isRecoveredView}
               onClick={handleConfirm}
             >
               Log Location
