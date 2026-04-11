@@ -51,13 +51,18 @@ export default function WorldMap({
         center={[30, 10]}
         zoom={2}
         minZoom={2}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", background: "#1a1a2e" }}
         zoomControl={false}
         attributionControl={false}
         worldCopyJump={true}
         maxBoundsViscosity={0}
       >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          keepBuffer={6}
+          updateWhenZooming={false}
+          updateWhenIdle={false}
+        />
         <FitBoundsOnce rounds={rounds} />
 
         {rounds.map((round) => {
