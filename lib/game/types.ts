@@ -1,3 +1,7 @@
+export type GameMode = "global" | "austin";
+
+export type RoundSource = "windy" | "austin";
+
 export type Round = {
   id: string;
   image: string;
@@ -6,7 +10,13 @@ export type Round = {
   city: string;
   region: string;
   country: string;
-  source: "windy";
+  source: RoundSource;
+  mode?: GameMode;
+  locationName?: string;
+  primaryStreet?: string;
+  crossStreet?: string;
+  landmark?: string;
+  cameraId?: string;
 };
 
 export type Guess = {

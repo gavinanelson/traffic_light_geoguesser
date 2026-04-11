@@ -16,23 +16,46 @@ const fakeRounds: Round[] = Array.from({ length: 20 }, (_, i) => ({
 describe("selectEnvelope", () => {
   it("returns exactly 10 rounds by default", () => {
     const envelope = selectEnvelope(fakeRounds);
+
     expect(envelope).toHaveLength(10);
   });
 
   it("returns a custom count when specified", () => {
     const envelope = selectEnvelope(fakeRounds, 5);
+
     expect(envelope).toHaveLength(5);
+  });
+
+  it("returns unique rounds from across the full pool", () => {
+    const envelope = selectEnvelope(fakeRounds, 10, () => 0.42);
+
+    expect(envelope).toHaveLength(10);
+    expect(new Set(envelope.map((round) => round.id)).size).toBe(10);
+  });
+
+  it("can pull from later parts of the pool instead of only the first 10", () => {
+    const rngValues = [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95];
+    let index = 0;
+    const rng = () => rngValues[index++] ?? 0;
+
+    const envelope = selectEnvelope(fakeRounds, 10, rng);
+
+    expect(envelope).toHaveLength(10);
+    expect(envelope.some((round) => Number(round.id.split("-")[1]) >= 10)).toBe(true);
   });
 
   it("returns all rounds if pool is smaller than requested count", () => {
     const small = fakeRounds.slice(0, 3);
-    const envelope = selectEnvelope(small, 10);
+    const envelope = selectEnvelope(small, 10, () => 0);
+
     expect(envelope).toHaveLength(3);
   });
 
   it("does not mutate the input array", () => {
     const copy = [...fakeRounds];
-    selectEnvelope(fakeRounds);
+
+    selectEnvelope(fakeRounds, 10, () => 0);
+
     expect(fakeRounds).toEqual(copy);
   });
 });
@@ -66,4 +89,24 @@ describe("mapRawToRound", () => {
       source: "windy",
     });
   });
+});
+
+it("supports Austin mode round metadata", () => {
+  const round: Round = {
+    id: "austin-649",
+    image: "/rounds/austin/649.jpg",
+    lat: 30.258518,
+    lng: -97.728668,
+    city: "Austin",
+    region: "Texas",
+    country: "USA",
+    source: "austin",
+    mode: "austin",
+    locationName: "CESAR CHAVEZ ST / COMAL ST",
+    cameraId: "649",
+  };
+
+  expect(round.mode).toBe("austin");
+  expect(round.source).toBe("austin");
+  expect(round.cameraId).toBe("649");
 });
