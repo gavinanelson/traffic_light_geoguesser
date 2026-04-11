@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { GameState, GameAction } from "../../lib/game/types";
 import HUD from "./HUD";
 import PacketPhoto from "./PacketPhoto";
@@ -13,9 +13,19 @@ export type ShiftScreenProps = {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
   onTimerStart?: () => void;
+  austinRoundLocked?: boolean;
+  austinRoundMessage?: string | null;
+  onAustinRoundDismissRequested?: () => void;
 };
 
-export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScreenProps) {
+export default function ShiftScreen({
+  state,
+  dispatch,
+  onTimerStart,
+  austinRoundLocked = false,
+  austinRoundMessage = null,
+  onAustinRoundDismissRequested,
+}: ShiftScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
 
@@ -28,6 +38,13 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
   const currentRound = state.rounds[visualIndex];
   const remainingCount = state.rounds.length - visualIndex;
   const isAustin = state.mode === "austin";
+  const isAustinLocked = isAustin && austinRoundLocked;
+
+  useEffect(() => {
+    if (isAustinLocked) {
+      setSelectedId(null);
+    }
+  }, [isAustinLocked]);
 
   const handleIntroComplete = useCallback(() => {
     setShowIntro(false);
@@ -38,6 +55,7 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
     if (!selectedId) return;
 
     if (isAustin) {
+      if (isAustinLocked) return;
       dispatch({ type: "SUBMIT_GUESS", chosenId: selectedId });
       setSelectedId(null);
       return;
@@ -60,11 +78,14 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
       setSlidingOffKey(null);
       setVisualIndex(nextIndexRef.current);
     }, 350);
-  }, [selectedId, dispatch, visualIndex, state.rounds, isAustin]);
+  }, [selectedId, dispatch, visualIndex, state.rounds, isAustin, isAustinLocked]);
 
   const handleDismiss = useCallback(() => {
+    if (isAustin) {
+      onAustinRoundDismissRequested?.();
+    }
     dispatch({ type: "DISMISS_FEEDBACK" });
-  }, [dispatch]);
+  }, [dispatch, isAustin, onAustinRoundDismissRequested]);
 
   // The next photo that sits underneath during slide-off
   const nextRound = visualIndex + 1 < state.rounds.length
@@ -137,7 +158,10 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
               rounds={state.rounds}
               roundResults={state.roundResults}
               selectedId={selectedId}
-              onSelectMarker={setSelectedId}
+              onSelectMarker={(id) => {
+                if (isAustinLocked) return;
+                setSelectedId(id);
+              }}
             />
 
             {state.feedback && (
@@ -146,6 +170,27 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
                 rounds={state.rounds}
                 onDismiss={handleDismiss}
               />
+            )}
+
+            {isAustinLocked && austinRoundMessage && (
+              <div
+                aria-live="polite"
+                style={{
+                  position: "absolute",
+                  left: 16,
+                  bottom: 16,
+                  zIndex: 5,
+                  padding: "10px 14px",
+                  border: "1px solid var(--border)",
+                  background: "rgba(247, 243, 236, 0.96)",
+                  color: "var(--text-primary)",
+                  fontSize: 12,
+                  boxShadow: "0 10px 24px rgba(0, 0, 0, 0.08)",
+                  maxWidth: 320,
+                }}
+              >
+                {austinRoundMessage}
+              </div>
             )}
           </div>
 
@@ -169,7 +214,7 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
             </span>
             <button
               className="btn btn-primary"
-              disabled={!selectedId || slidingOffKey !== null || showIntro}
+              disabled={!selectedId || slidingOffKey !== null || showIntro || isAustinLocked}
               onClick={handleConfirm}
             >
               Log Location

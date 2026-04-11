@@ -12,6 +12,8 @@ export default function HomePage() {
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
   const [isStarting, setIsStarting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [austinRoundLocked, setAustinRoundLocked] = useState(false);
+  const [austinRoundMessage, setAustinRoundMessage] = useState<string | null>(null);
   const timerStarted = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const austinFetchCursorRef = useRef(0);
@@ -26,6 +28,8 @@ export default function HomePage() {
       }
       austinFetchCursorRef.current = 0;
       austinFetchPendingRef.current = false;
+      setAustinRoundLocked(false);
+      setAustinRoundMessage(null);
     }
   }, [state.phase]);
 
@@ -51,14 +55,18 @@ export default function HomePage() {
 
     austinFetchPendingRef.current = true;
     austinFetchCursorRef.current = completed;
+    setAustinRoundMessage("Loading next Austin node...");
 
     void (async () => {
       try {
         const envelope = await requestEnvelope(fetch, "austin", 1);
-        setLoadError(null);
         dispatch({ type: "REPLACE_ROUNDS", rounds: envelope });
+        setAustinRoundLocked(false);
+        setAustinRoundMessage(null);
       } catch (error) {
-        setLoadError(error instanceof Error ? error.message : "Failed to assign envelope");
+        const message = error instanceof Error ? error.message : "Failed to assign envelope";
+        setAustinRoundMessage(message);
+        setAustinRoundLocked(true);
       } finally {
         austinFetchPendingRef.current = false;
       }
@@ -89,6 +97,8 @@ export default function HomePage() {
   const handlePlayAgain = useCallback(() => {
     dispatch({ type: "PLAY_AGAIN" });
     setLoadError(null);
+    setAustinRoundLocked(false);
+    setAustinRoundMessage(null);
   }, []);
 
   switch (state.phase) {
@@ -101,7 +111,23 @@ export default function HomePage() {
         />
       );
     case "shift":
-      return <ShiftScreen state={state} dispatch={dispatch} onTimerStart={handleTimerStart} />;
+      return (
+        <ShiftScreen
+          state={state}
+          dispatch={dispatch}
+          onTimerStart={handleTimerStart}
+          austinRoundLocked={austinRoundLocked}
+          austinRoundMessage={austinRoundMessage}
+          onAustinRoundDismissRequested={
+            state.mode === "austin"
+              ? () => {
+                  setAustinRoundLocked(true);
+                  setAustinRoundMessage("Loading next Austin node...");
+                }
+              : undefined
+          }
+        />
+      );
     case "debrief":
       return <DebriefScreen result={buildShiftResult(state)} onPlayAgain={handlePlayAgain} />;
   }
