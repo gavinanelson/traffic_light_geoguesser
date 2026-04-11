@@ -181,11 +181,12 @@ export default function WorldMap({
             : state === "unguessed";
 
           if (isAustin) {
-            const radius = isActiveAustinRound || isSelected || isHovered ? 11 : 7;
-            const color = restored ? "#66b66e" : isActiveAustinRound ? "#e8d5b0" : "#6f7a78";
-            const fillColor = restored ? "#4a7a4a" : isActiveAustinRound ? "#d4a24e" : "#414947";
-            const fillOpacity = restored ? 0.85 : isActiveAustinRound ? 0.95 : 0.32;
-            const weight = isActiveAustinRound ? 2.5 : 1;
+            const highlighted = !isRecoveredView && isActiveAustinRound;
+            const radius = restored || highlighted || isSelected || isHovered ? 11 : 7;
+            const color = restored ? "#66b66e" : isRecoveredView ? "#6f7a78" : highlighted ? "#e8d5b0" : "#6f7a78";
+            const fillColor = restored ? "#4a7a4a" : isRecoveredView ? "#414947" : highlighted ? "#d4a24e" : "#414947";
+            const fillOpacity = restored ? 0.85 : isRecoveredView ? 0.22 : highlighted ? 0.95 : 0.32;
+            const weight = restored || highlighted ? 2.5 : 1;
 
             return (
               <CircleMarker
