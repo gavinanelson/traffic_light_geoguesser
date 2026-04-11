@@ -33,33 +33,6 @@ function isRestored(round: Round, roundResults: RoundFeedback[]): boolean {
   return round.restored === true || roundResults.some((result) => result.correct && result.correctId === round.id);
 }
 
-/** Convert two-finger trackpad scroll into pan. Ctrl+scroll zooms. */
-function TrackpadPan() {
-  const map = useMap();
-
-  useEffect(() => {
-    const container = map.getContainer();
-
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-
-      if (e.ctrlKey || e.metaKey) {
-        // Ctrl/Cmd + scroll = zoom
-        const delta = e.deltaY > 0 ? -1 : 1;
-        map.zoomIn(delta, { animate: true });
-      } else {
-        // Normal scroll = pan
-        map.panBy([e.deltaX, e.deltaY], { animate: false });
-      }
-    };
-
-    container.addEventListener("wheel", onWheel, { passive: false });
-    return () => container.removeEventListener("wheel", onWheel);
-  }, [map]);
-
-  return null;
-}
-
 function FitBoundsOnce({
   rounds,
   fitToBounds,
@@ -152,7 +125,7 @@ export default function WorldMap({
         worldCopyJump={true}
         maxBounds={isAustin ? AUSTIN_BOUNDS : [[-85, -Infinity], [85, Infinity]]}
         maxBoundsViscosity={1.0}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
         touchZoom={true}
         doubleClickZoom={true}
         inertia={true}
@@ -168,7 +141,6 @@ export default function WorldMap({
           fitToBounds={isAustin ? AUSTIN_BOUNDS : undefined}
           fitKey={`${mode}-${viewMode}-${displayRounds.length}`}
         />
-        <TrackpadPan />
 
         {sorted.map((round) => {
           const state = markerState(round, roundResults);
