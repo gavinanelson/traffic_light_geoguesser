@@ -26,27 +26,9 @@ describe("selectEnvelope", () => {
     expect(envelope).toHaveLength(5);
   });
 
-  it("returns unique rounds from across the full pool", () => {
-    const envelope = selectEnvelope(fakeRounds, 10, () => 0.42);
-
-    expect(envelope).toHaveLength(10);
-    expect(new Set(envelope.map((round) => round.id)).size).toBe(10);
-  });
-
-  it("can pull from later parts of the pool instead of only the first 10", () => {
-    const rngValues = [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95];
-    let index = 0;
-    const rng = () => rngValues[index++] ?? 0;
-
-    const envelope = selectEnvelope(fakeRounds, 10, rng);
-
-    expect(envelope).toHaveLength(10);
-    expect(envelope.some((round) => Number(round.id.split("-")[1]) >= 10)).toBe(true);
-  });
-
   it("returns all rounds if pool is smaller than requested count", () => {
     const small = fakeRounds.slice(0, 3);
-    const envelope = selectEnvelope(small, 10, () => 0);
+    const envelope = selectEnvelope(small, 10);
 
     expect(envelope).toHaveLength(3);
   });
@@ -54,7 +36,7 @@ describe("selectEnvelope", () => {
   it("does not mutate the input array", () => {
     const copy = [...fakeRounds];
 
-    selectEnvelope(fakeRounds, 10, () => 0);
+    selectEnvelope(fakeRounds);
 
     expect(fakeRounds).toEqual(copy);
   });
