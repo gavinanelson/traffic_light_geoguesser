@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Round, RoundFeedback } from "../../lib/game/types";
@@ -21,14 +21,6 @@ function markerState(
   return result.correct ? "correct" : "incorrect";
 }
 
-const MARKER_STYLES = {
-  unguessed:  { color: "#c4a862", fillColor: "#6b5530", fillOpacity: 0.6, radius: 7, weight: 1.5 },
-  hovered:    { color: "#e8d5b0", fillColor: "#c4a862", fillOpacity: 0.9, radius: 11, weight: 2 },
-  selected:   { color: "#e8d5b0", fillColor: "#d4a24e", fillOpacity: 1,   radius: 11, weight: 2.5 },
-  correct:    { color: "#6aae6a", fillColor: "#4a7a4a", fillOpacity: 0.7, radius: 6, weight: 1.5 },
-  incorrect:  { color: "#c06060", fillColor: "#8b0000", fillOpacity: 0.7, radius: 6, weight: 1.5 },
-} as const;
-
 function FitBoundsOnce({ rounds }: { rounds: Round[] }) {
   const map = useMap();
   const fitted = useRef(false);
@@ -40,58 +32,6 @@ function FitBoundsOnce({ rounds }: { rounds: Round[] }) {
   return null;
 }
 
-function Marker({
-  round,
-  state,
-  isSelected,
-  isHovered,
-  onSelect,
-  onHoverIn,
-  onHoverOut,
-}: {
-  round: Round;
-  state: "correct" | "incorrect" | "unguessed";
-  isSelected: boolean;
-  isHovered: boolean;
-  onSelect: () => void;
-  onHoverIn: () => void;
-  onHoverOut: () => void;
-}) {
-  const clickable = state === "unguessed";
-
-  let style: { color: string; fillColor: string; fillOpacity: number; radius: number; weight: number };
-  if (isSelected) style = MARKER_STYLES.selected;
-  else if (isHovered && clickable) style = MARKER_STYLES.hovered;
-  else style = MARKER_STYLES[state];
-
-  const showTooltip = isSelected || (isHovered && clickable);
-
-  return (
-    <CircleMarker
-      center={[round.lat, round.lng]}
-      {...style}
-      eventHandlers={
-        clickable
-          ? {
-              click: onSelect,
-              mouseover: onHoverIn,
-              mouseout: onHoverOut,
-            }
-          : undefined
-      }
-      interactive={clickable || isSelected}
-    >
-      {showTooltip && (
-        <Tooltip permanent direction="top" offset={[0, -14]}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
-            {round.city}, {round.country}
-          </span>
-        </Tooltip>
-      )}
-    </CircleMarker>
-  );
-}
-
 export default function WorldMap({
   rounds,
   roundResults,
@@ -100,8 +40,16 @@ export default function WorldMap({
 }: WorldMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const handleHoverIn = useCallback((id: string) => setHoveredId(id), []);
-  const handleHoverOut = useCallback(() => setHoveredId(null), []);
+  // Sort: guessed first (bottom of SVG), unguessed last (top, clickable)
+  const sorted = useMemo(() => {
+    return [...rounds].sort((a, b) => {
+      const aState = markerState(a, roundResults);
+      const bState = markerState(b, roundResults);
+      if (aState === "unguessed" && bState !== "unguessed") return 1;
+      if (aState !== "unguessed" && bState === "unguessed") return -1;
+      return 0;
+    });
+  }, [rounds, roundResults]);
 
   return (
     <div className="map-container">
@@ -124,19 +72,60 @@ export default function WorldMap({
         />
         <FitBoundsOnce rounds={rounds} />
 
-        {rounds.map((round) => {
+        {sorted.map((round) => {
           const state = markerState(round, roundResults);
+          const isSelected = selectedId === round.id;
+          const isHovered = hoveredId === round.id;
+          const clickable = state === "unguessed";
+
+          if (!clickable) {
+            // Guessed markers: small, non-interactive (key includes state to force remount)
+            return (
+              <CircleMarker
+                key={`${round.id}-${state}`}
+                center={[round.lat, round.lng]}
+                radius={5}
+                color={state === "correct" ? "#6aae6a" : "#c06060"}
+                fillColor={state === "correct" ? "#4a7a4a" : "#8b0000"}
+                fillOpacity={0.5}
+                weight={1}
+                interactive={false}
+              />
+            );
+          }
+
+          // Unguessed markers: larger, interactive, hover/select states
+          const radius = isSelected || isHovered ? 12 : 9;
+          const color = isSelected || isHovered ? "#e8d5b0" : "#c4a862";
+          const fillColor = isSelected ? "#d4a24e" : isHovered ? "#c4a862" : "#6b5530";
+          const fillOpacity = isSelected ? 1 : isHovered ? 0.9 : 0.7;
+          const weight = isSelected ? 2.5 : isHovered ? 2 : 1.5;
+
           return (
-            <Marker
-              key={round.id}
-              round={round}
-              state={state}
-              isSelected={selectedId === round.id}
-              isHovered={hoveredId === round.id}
-              onSelect={() => onSelectMarker(round.id)}
-              onHoverIn={() => handleHoverIn(round.id)}
-              onHoverOut={handleHoverOut}
-            />
+            <CircleMarker
+              key={`${round.id}-active`}
+              center={[round.lat, round.lng]}
+              radius={radius}
+              color={color}
+              fillColor={fillColor}
+              fillOpacity={fillOpacity}
+              weight={weight}
+              interactive={true}
+              bubblingMouseEvents={false}
+              eventHandlers={{
+                click: () => onSelectMarker(round.id),
+                mouseover: () => setHoveredId(round.id),
+                mouseout: () => setHoveredId(null),
+              }}
+            >
+              {(isSelected || isHovered) && (
+                <Tooltip permanent direction="top" offset={[0, -14]}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+                    {round.city}, {round.country}
+                  </span>
+                </Tooltip>
+              )}
+            </CircleMarker>
           );
         })}
       </MapContainer>

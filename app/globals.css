@@ -187,7 +187,6 @@ html, body {
 
 .map-container .leaflet-interactive {
   cursor: pointer;
-  transition: r 0.1s, fill-opacity 0.1s, stroke-width 0.1s;
 }
 
 /* ── Feedback overlay ── */
