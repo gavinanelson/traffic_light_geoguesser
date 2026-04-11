@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useCallback } from "react";
+import { useReducer, useEffect, useCallback, useRef } from "react";
 import { gameReducer, initialGameState, buildShiftResult } from "../lib/game/engine";
 import { loadRounds, selectEnvelope } from "../lib/game/rounds";
 import BriefingScreen from "./components/BriefingScreen";
@@ -11,13 +11,32 @@ const allRounds = loadRounds();
 
 export default function HomePage() {
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
+  const timerStarted = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Timer: tick every second while in shift phase
+  // Clear timer when leaving shift phase
   useEffect(() => {
-    if (state.phase !== "shift") return;
-    const id = setInterval(() => dispatch({ type: "TICK" }), 1000);
-    return () => clearInterval(id);
+    if (state.phase !== "shift") {
+      timerStarted.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
   }, [state.phase]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const handleTimerStart = useCallback(() => {
+    if (timerStarted.current) return;
+    timerStarted.current = true;
+    intervalRef.current = setInterval(() => dispatch({ type: "TICK" }), 1000);
+  }, []);
 
   const handleStartShift = useCallback(
     (durationSeconds: number) => {
@@ -35,7 +54,13 @@ export default function HomePage() {
     case "briefing":
       return <BriefingScreen onStartShift={handleStartShift} />;
     case "shift":
-      return <ShiftScreen state={state} dispatch={dispatch} />;
+      return (
+        <ShiftScreen
+          state={state}
+          dispatch={dispatch}
+          onTimerStart={handleTimerStart}
+        />
+      );
     case "debrief":
       return <DebriefScreen result={buildShiftResult(state)} onPlayAgain={handlePlayAgain} />;
   }

@@ -1,30 +1,78 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { GameState, GameAction } from "../../lib/game/types";
 import HUD from "./HUD";
 import PacketPhoto from "./PacketPhoto";
 import WorldMapLoader from "./WorldMapLoader";
 import FeedbackOverlay from "./FeedbackOverlay";
+import EnvelopeAnimation from "./EnvelopeAnimation";
 
 export type ShiftScreenProps = {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
+  onTimerStart: () => void;
 };
 
-export default function ShiftScreen({ state, dispatch }: ShiftScreenProps) {
+export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const currentRound = state.rounds[state.currentRoundIndex];
+  const [showIntro, setShowIntro] = useState(true);
+  const [slidingOff, setSlidingOff] = useState(false);
+  const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0);
+
+  const currentRound = state.rounds[displayedRoundIndex];
+  const remainingCount = state.rounds.length - state.currentRoundIndex;
+
+  // Sync displayedRoundIndex with game state (after slide-off completes)
+  useEffect(() => {
+    if (!slidingOff && displayedRoundIndex !== state.currentRoundIndex) {
+      setDisplayedRoundIndex(state.currentRoundIndex);
+    }
+  }, [state.currentRoundIndex, slidingOff, displayedRoundIndex]);
+
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false);
+    onTimerStart();
+  }, [onTimerStart]);
 
   const handleConfirm = useCallback(() => {
     if (!selectedId) return;
+    // Start slide-off animation
+    setSlidingOff(true);
     dispatch({ type: "SUBMIT_GUESS", chosenId: selectedId });
     setSelectedId(null);
   }, [selectedId, dispatch]);
 
   const handleDismiss = useCallback(() => {
     dispatch({ type: "DISMISS_FEEDBACK" });
+    setSlidingOff(false);
   }, [dispatch]);
+
+  const deskBackground = `
+    repeating-linear-gradient(
+      87deg,
+      transparent,
+      transparent 3px,
+      rgba(60, 42, 20, 0.08) 3px,
+      rgba(60, 42, 20, 0.08) 6px
+    ),
+    repeating-linear-gradient(
+      2deg,
+      transparent,
+      transparent 40px,
+      rgba(90, 65, 30, 0.06) 40px,
+      rgba(90, 65, 30, 0.06) 41px
+    ),
+    linear-gradient(
+      90deg,
+      #231a0e 0%,
+      #2e2114 15%,
+      #342618 40%,
+      #2e2114 60%,
+      #291d10 85%,
+      #231a0e 100%
+    )
+  `;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -35,7 +83,8 @@ export default function ShiftScreen({ state, dispatch }: ShiftScreenProps) {
         correct={state.correct}
       />
 
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
+        {/* Left panel: photo on desk */}
         <div
           style={{
             flex: "0 0 44%",
@@ -43,38 +92,25 @@ export default function ShiftScreen({ state, dispatch }: ShiftScreenProps) {
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
-            background: `
-              repeating-linear-gradient(
-                87deg,
-                transparent,
-                transparent 3px,
-                rgba(60, 42, 20, 0.08) 3px,
-                rgba(60, 42, 20, 0.08) 6px
-              ),
-              repeating-linear-gradient(
-                2deg,
-                transparent,
-                transparent 40px,
-                rgba(90, 65, 30, 0.06) 40px,
-                rgba(90, 65, 30, 0.06) 41px
-              ),
-              linear-gradient(
-                90deg,
-                #231a0e 0%,
-                #2e2114 15%,
-                #342618 40%,
-                #2e2114 60%,
-                #291d10 85%,
-                #231a0e 100%
-              )
-            `,
+            background: deskBackground,
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {currentRound && (
-            <PacketPhoto imageSrc={currentRound.image} packetId={currentRound.id} />
+          {!showIntro && currentRound && (
+            <PacketPhoto
+              imageSrc={currentRound.image}
+              packetId={currentRound.id}
+              remainingCount={remainingCount}
+              slideOff={slidingOff}
+            />
           )}
+
+          {/* Envelope animation overlay */}
+          {showIntro && <EnvelopeAnimation onComplete={handleIntroComplete} />}
         </div>
 
+        {/* Right panel: map + confirm */}
         <div
           style={{
             flex: 1,
@@ -121,7 +157,7 @@ export default function ShiftScreen({ state, dispatch }: ShiftScreenProps) {
             </span>
             <button
               className="btn btn-primary"
-              disabled={!selectedId || state.feedback !== null}
+              disabled={!selectedId || state.feedback !== null || showIntro}
               onClick={handleConfirm}
             >
               Log Location
