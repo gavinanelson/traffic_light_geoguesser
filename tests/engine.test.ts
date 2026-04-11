@@ -13,6 +13,7 @@ describe("gameReducer", () => {
     it("transitions from briefing to shift with the given rounds and duration", () => {
       const state = gameReducer(initialGameState, {
         type: "START_SHIFT",
+        mode: "global",
         durationSeconds: 180,
         rounds: fakeRounds,
       });
@@ -22,6 +23,7 @@ describe("gameReducer", () => {
       expect(state.timeRemaining).toBe(180);
       expect(state.currentRoundIndex).toBe(0);
       expect(state.correct).toBe(0);
+      expect(state.mode).toBe("global");
       expect(state.feedback).toBeNull();
       expect(state.roundResults).toEqual([]);
     });
@@ -31,6 +33,7 @@ describe("gameReducer", () => {
     it("sets feedback with correct=true when the guess matches the current round", () => {
       const shiftState: GameState = {
         phase: "shift",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 0,
         correct: 0,
@@ -53,6 +56,7 @@ describe("gameReducer", () => {
     it("sets feedback with correct=false when the guess is wrong", () => {
       const shiftState: GameState = {
         phase: "shift",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 0,
         correct: 0,
@@ -74,9 +78,57 @@ describe("gameReducer", () => {
   });
 
   describe("DISMISS_FEEDBACK", () => {
+
+    it("keeps Austin in shift after dismissing feedback with time remaining", () => {
+      const state: GameState = {
+        phase: "shift",
+        mode: "austin",
+        rounds: [fakeRounds[0]],
+        currentRoundIndex: 0,
+        correct: 1,
+        timeRemaining: 120,
+        durationSeconds: 180,
+        feedback: { correct: true, chosenId: "london-1", correctId: "london-1" },
+        roundResults: [{ correct: true, chosenId: "london-1", correctId: "london-1" }],
+      };
+
+      const next = gameReducer(state, { type: "DISMISS_FEEDBACK" });
+
+      expect(next.phase).toBe("shift");
+      expect(next.feedback).toBeNull();
+      expect(next.currentRoundIndex).toBe(0);
+      expect(next.mode).toBe("austin");
+    });
+
+    it("replaces Austin rounds without resetting score or time", () => {
+      const state: GameState = {
+        phase: "shift",
+        mode: "austin",
+        rounds: [fakeRounds[0]],
+        currentRoundIndex: 0,
+        correct: 1,
+        timeRemaining: 117,
+        durationSeconds: 180,
+        feedback: null,
+        roundResults: [{ correct: true, chosenId: "london-1", correctId: "london-1" }],
+      };
+
+      const nextRounds: Round[] = [fakeRounds[1]];
+      const next = gameReducer(state, { type: "REPLACE_ROUNDS", rounds: nextRounds });
+
+      expect(next.phase).toBe("shift");
+      expect(next.rounds).toEqual(nextRounds);
+      expect(next.currentRoundIndex).toBe(0);
+      expect(next.correct).toBe(1);
+      expect(next.timeRemaining).toBe(117);
+      expect(next.durationSeconds).toBe(180);
+      expect(next.mode).toBe("austin");
+      expect(next.feedback).toBeNull();
+    });
     it("advances to the next round", () => {
       const state: GameState = {
         phase: "shift",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 0,
         correct: 1,
@@ -94,6 +146,7 @@ describe("gameReducer", () => {
     it("transitions to debrief when all rounds are complete", () => {
       const state: GameState = {
         phase: "shift",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 2,
         correct: 2,
@@ -115,6 +168,7 @@ describe("gameReducer", () => {
     it("decrements timeRemaining by 1", () => {
       const state: GameState = {
         phase: "shift",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 0,
         correct: 0,
@@ -130,6 +184,7 @@ describe("gameReducer", () => {
     it("transitions to debrief when time reaches zero", () => {
       const state: GameState = {
         phase: "shift",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 1,
         correct: 1,
@@ -148,6 +203,7 @@ describe("gameReducer", () => {
     it("resets to initial briefing state", () => {
       const state: GameState = {
         phase: "debrief",
+        mode: "global",
         rounds: fakeRounds,
         currentRoundIndex: 2,
         correct: 2,

@@ -25,6 +25,8 @@ function formatTime(seconds: number): string {
 }
 
 export default function DebriefScreen({ result, onPlayAgain }: DebriefScreenProps) {
+  const isAustin = result.mode === "austin";
+
   return (
     <div
       style={{
@@ -51,58 +53,89 @@ export default function DebriefScreen({ result, onPlayAgain }: DebriefScreenProp
 
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 48, fontWeight: 700, color: "#2a1f14" }}>
-            {result.correct} <span style={{ fontSize: 24, color: "#5a4a32" }}>/ 10</span>
+            {result.correct}{isAustin ? null : <span style={{ fontSize: 24, color: "#5a4a32" }}>/ 10</span>}
           </div>
           <div
             className="stencil"
             style={{ fontSize: 11, color: "#5a4a32", marginTop: 4 }}
           >
-            Locations Verified
+            {isAustin ? "Nodes Restored" : "Locations Verified"}
           </div>
         </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isAustin ? "1fr 1fr 1fr" : "1fr 1fr",
             gap: 12,
             marginBottom: 24,
             fontSize: 12,
             color: "#5a4a32",
           }}
         >
-          <div>
-            <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
-              Rounds Attempted
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
-              {result.total}
-            </div>
-          </div>
-          <div>
-            <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
-              Time Used
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
-              {formatTime(result.timeUsed)}
-            </div>
-          </div>
-          <div>
-            <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
-              Shift Duration
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
-              {formatTime(result.durationSeconds)}
-            </div>
-          </div>
-          <div>
-            <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
-              Accuracy
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
-              {result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0}%
-            </div>
-          </div>
+          {isAustin ? (
+            <>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Attempts Logged
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {result.total}
+                </div>
+              </div>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Time Used
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {formatTime(result.timeUsed)}
+                </div>
+              </div>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Accuracy
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0}%
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Rounds Attempted
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {result.total}
+                </div>
+              </div>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Time Used
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {formatTime(result.timeUsed)}
+                </div>
+              </div>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Shift Duration
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {formatTime(result.durationSeconds)}
+                </div>
+              </div>
+              <div>
+                <div className="stencil" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Accuracy
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#2a1f14" }}>
+                  {result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0}%
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <p

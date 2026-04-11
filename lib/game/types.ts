@@ -34,6 +34,7 @@ export type RoundFeedback = {
 };
 
 export type ShiftResult = {
+  mode: GameMode;
   correct: number;
   total: number;
   roundResults: RoundFeedback[];
@@ -43,6 +44,7 @@ export type ShiftResult = {
 
 export type GameState = {
   phase: GamePhase;
+  mode: GameMode;
   rounds: Round[];
   currentRoundIndex: number;
   correct: number;
@@ -53,7 +55,8 @@ export type GameState = {
 };
 
 export type GameAction =
-  | { type: "START_SHIFT"; durationSeconds: number; rounds: Round[] }
+  | { type: "START_SHIFT"; mode: GameMode; durationSeconds: number; rounds: Round[] }
+  | { type: "REPLACE_ROUNDS"; rounds: Round[] }
   | { type: "SUBMIT_GUESS"; chosenId: string }
   | { type: "DISMISS_FEEDBACK" }
   | { type: "TICK" }

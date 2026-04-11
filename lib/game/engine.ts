@@ -2,6 +2,7 @@ import type { GameState, GameAction, ShiftResult } from "./types";
 
 export const initialGameState: GameState = {
   phase: "briefing",
+  mode: "global",
   rounds: [],
   currentRoundIndex: 0,
   correct: 0,
@@ -13,6 +14,7 @@ export const initialGameState: GameState = {
 
 export function buildShiftResult(state: GameState): ShiftResult {
   return {
+    mode: state.mode,
     correct: state.correct,
     total: state.roundResults.length,
     roundResults: state.roundResults,
@@ -27,10 +29,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialGameState,
         phase: "shift",
+        mode: action.mode,
         rounds: action.rounds,
         durationSeconds: action.durationSeconds,
         timeRemaining: action.durationSeconds,
       };
+
+    case "REPLACE_ROUNDS": {
+      if (state.phase !== "shift" || state.timeRemaining <= 0) return state;
+      return {
+        ...state,
+        rounds: action.rounds,
+        currentRoundIndex: 0,
+        feedback: null,
+        phase: "shift",
+      };
+    }
 
     case "SUBMIT_GUESS": {
       if (state.phase !== "shift") return state;
@@ -51,6 +65,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "DISMISS_FEEDBACK": {
       if (state.phase !== "shift") return state;
+      if (state.mode === "austin") {
+        return {
+          ...state,
+          feedback: null,
+          currentRoundIndex: 0,
+          phase: state.timeRemaining <= 0 ? "debrief" : "shift",
+        };
+      }
       const nextIndex = state.currentRoundIndex + 1;
       const allDone = nextIndex >= state.rounds.length;
       return {

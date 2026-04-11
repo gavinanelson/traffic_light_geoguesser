@@ -27,6 +27,7 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
 
   const currentRound = state.rounds[visualIndex];
   const remainingCount = state.rounds.length - visualIndex;
+  const isAustin = state.mode === "austin";
 
   const handleIntroComplete = useCallback(() => {
     setShowIntro(false);
@@ -35,6 +36,12 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
 
   const handleConfirm = useCallback(() => {
     if (!selectedId) return;
+
+    if (isAustin) {
+      dispatch({ type: "SUBMIT_GUESS", chosenId: selectedId });
+      setSelectedId(null);
+      return;
+    }
 
     const currentKey = state.rounds[visualIndex]?.id;
     setSlidingOffKey(currentKey);
@@ -53,7 +60,7 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
       setSlidingOffKey(null);
       setVisualIndex(nextIndexRef.current);
     }, 350);
-  }, [selectedId, dispatch, visualIndex, state.rounds]);
+  }, [selectedId, dispatch, visualIndex, state.rounds, isAustin]);
 
   const handleDismiss = useCallback(() => {
     dispatch({ type: "DISMISS_FEEDBACK" });
