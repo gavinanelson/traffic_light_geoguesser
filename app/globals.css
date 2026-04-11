@@ -185,6 +185,11 @@ html, body {
   filter: sepia(0.3) hue-rotate(10deg) brightness(0.9);
 }
 
+.map-container .leaflet-interactive {
+  cursor: pointer;
+  transition: r 0.1s, fill-opacity 0.1s, stroke-width 0.1s;
+}
+
 /* ── Feedback overlay ── */
 .feedback-overlay {
   position: absolute;
