@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from "react-le
 import "leaflet/dist/leaflet.css";
 import type { GameMode, Round, RoundFeedback } from "../../lib/game/types";
 import austinRounds from "../../data/rounds-austin.json";
+import rawWebcams from "../../data/raw-webcams.json";
 
 export const AUSTIN_BOUNDS: [[number, number], [number, number]] = [
   [30.08, -98.08],
@@ -31,6 +32,30 @@ function markerState(
 
 function isRestored(round: Round, roundResults: RoundFeedback[]): boolean {
   return round.restored === true || roundResults.some((result) => result.correct && result.correctId === round.id);
+}
+
+/** Pick N random distractor locations from the full webcam pool, excluding envelope rounds */
+function pickDistractors(envelopeIds: Set<string>, count: number): Round[] {
+  const pool = (rawWebcams as Array<{ id: string; imagePath: string; lat: number; lng: number; city: string; region: string; country: string }>)
+    .filter((w) => !envelopeIds.has(w.id))
+    .map((w) => ({
+      id: `distractor-${w.id}`,
+      image: w.imagePath,
+      lat: w.lat,
+      lng: w.lng,
+      city: w.city,
+      region: w.region,
+      country: w.country,
+      source: "windy" as const,
+    }));
+
+  // Shuffle and take N
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, count);
 }
 
 function FitBoundsOnce({
@@ -83,17 +108,33 @@ export default function WorldMap({
   const isRecoveredView = isAustin && viewMode === "recovered";
   const activeRoundId = rounds[0]?.id ?? null;
 
-  const displayRounds = useMemo(() => {
-    if (!isAustin) return rounds;
+  // Pick distractors once when envelope rounds change (stable across re-renders)
+  const distractors = useRef<Round[]>([]);
+  const lastRoundIds = useRef<string>("");
+  const currentIds = rounds.map((r) => r.id).join(",");
+  if (currentIds !== lastRoundIds.current) {
+    lastRoundIds.current = currentIds;
+    if (!isAustin) {
+      const envelopeIds = new Set(rounds.map((r) => r.id));
+      distractors.current = pickDistractors(envelopeIds, 10);
+    } else {
+      distractors.current = [];
+    }
+  }
 
-    const merged = new Map<string, Round>();
-    for (const round of austinRounds as Round[]) {
-      merged.set(round.id, round);
+  const displayRounds = useMemo(() => {
+    if (isAustin) {
+      const merged = new Map<string, Round>();
+      for (const round of austinRounds as Round[]) {
+        merged.set(round.id, round);
+      }
+      for (const round of rounds) {
+        merged.set(round.id, round);
+      }
+      return [...merged.values()];
     }
-    for (const round of rounds) {
-      merged.set(round.id, round);
-    }
-    return [...merged.values()];
+    // Global: envelope rounds + distractors
+    return [...rounds, ...distractors.current];
   }, [isAustin, rounds]);
 
   // Sort: guessed first (bottom of SVG), unguessed last (top, clickable)
