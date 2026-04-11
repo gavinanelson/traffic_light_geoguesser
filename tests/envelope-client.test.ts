@@ -1,3 +1,6 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import austinRounds from "../data/rounds-austin.json";
 import rawWebcams from "../data/raw-webcams.json";
@@ -57,7 +60,8 @@ describe("loadRoundsForMode", () => {
   });
 
   it("falls back to mapped raw webcams for global mode", () => {
-    const globalRounds = loadRoundsForMode("global");
+    const isolatedRoot = mkdtempSync(path.join(tmpdir(), "global-rounds-fallback-"));
+    const globalRounds = loadRoundsForMode("global", isolatedRoot);
 
     expect(globalRounds).toHaveLength(rawWebcams.length);
     expect(globalRounds[0]).toEqual(mapRawToRound(rawWebcams[0]));

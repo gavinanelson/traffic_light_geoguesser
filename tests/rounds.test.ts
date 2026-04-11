@@ -1,7 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it } from "vitest";
+import approvedManifest from "../approved-rounds/manifest.json";
 import austinRounds from "../data/rounds-austin.json";
 import rawWebcams from "../data/raw-webcams.json";
-import { loadRoundsForMode, selectEnvelope, mapRawToRound } from "../lib/game/rounds";
+import {
+  loadApprovedRounds,
+  loadRoundsForMode,
+  selectEnvelope,
+  mapRawToRound,
+} from "../lib/game/rounds";
 import type { Round } from "../lib/game/types";
 
 const fakeRounds: Round[] = Array.from({ length: 20 }, (_, i) => ({
@@ -14,6 +24,47 @@ const fakeRounds: Round[] = Array.from({ length: 20 }, (_, i) => ({
   country: `Country ${i}`,
   source: "windy" as const,
 }));
+
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    const dir = tempDirs.pop();
+
+    if (dir) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+function createApprovedRoundsFixture() {
+  const root = mkdtempSync(path.join(tmpdir(), "approved-rounds-"));
+  const approvedRoundsDir = path.join(root, "approved-rounds");
+  const imagesDir = path.join(approvedRoundsDir, "images");
+
+  mkdirSync(imagesDir, { recursive: true });
+  writeFileSync(path.join(imagesDir, "alpha.jpg"), "jpg");
+  writeFileSync(
+    path.join(approvedRoundsDir, "manifest.json"),
+    JSON.stringify({
+      rounds: [
+        {
+          id: "alpha",
+          filename: "images/alpha.jpg",
+          lat: 30.2672,
+          lng: -97.7431,
+          city: "Austin",
+          region: "Texas",
+          country: "USA",
+        },
+      ],
+    }),
+  );
+
+  tempDirs.push(root);
+
+  return root;
+}
 
 describe("selectEnvelope", () => {
   it("returns exactly 10 rounds by default", () => {
@@ -58,10 +109,68 @@ describe("loadRoundsForMode", () => {
   });
 
   it("falls back to mapped raw webcams for global mode", () => {
-    const globalRounds = loadRoundsForMode("global");
+    const isolatedRoot = mkdtempSync(path.join(tmpdir(), "global-rounds-fallback-"));
+    tempDirs.push(isolatedRoot);
+    const globalRounds = loadRoundsForMode("global", isolatedRoot);
 
     expect(globalRounds).toHaveLength(rawWebcams.length);
     expect(globalRounds[0]).toEqual(mapRawToRound(rawWebcams[0]));
+  });
+});
+
+describe("loadApprovedRounds", () => {
+  it("loads rounds from an approved-rounds manifest", () => {
+    const fixtureRoot = createApprovedRoundsFixture();
+
+    expect(loadApprovedRounds(fixtureRoot)).toEqual([
+      {
+        id: "alpha",
+        image: "/api/approved-rounds/images/alpha.jpg",
+        lat: 30.2672,
+        lng: -97.7431,
+        city: "Austin",
+        region: "Texas",
+        country: "USA",
+        source: "windy",
+      },
+    ]);
+  });
+
+  it("prefers approved-rounds manifest data for global mode when present", () => {
+    const fixtureRoot = createApprovedRoundsFixture();
+
+    expect(loadRoundsForMode("global", fixtureRoot)).toEqual([
+      {
+        id: "alpha",
+        image: "/api/approved-rounds/images/alpha.jpg",
+        lat: 30.2672,
+        lng: -97.7431,
+        city: "Austin",
+        region: "Texas",
+        country: "USA",
+        source: "windy",
+      },
+    ]);
+  });
+
+  it("uses the repo approved-rounds manifest for local global mode", () => {
+    const manifestRounds = Array.isArray(approvedManifest)
+      ? approvedManifest
+      : approvedManifest.rounds;
+    const globalRounds = loadRoundsForMode("global");
+
+    expect(globalRounds).toHaveLength(manifestRounds.length);
+    expect(globalRounds[0]).toEqual({
+      id: manifestRounds[0].id,
+      image: `/api/approved-rounds/${manifestRounds[0].filename}`,
+      lat: manifestRounds[0].lat,
+      lng: manifestRounds[0].lng,
+      city: manifestRounds[0].city,
+      region: manifestRounds[0].region,
+      country: manifestRounds[0].country,
+      source: "windy",
+    });
+    expect(globalRounds.every((round) => round.image.startsWith("/api/approved-rounds/"))).toBe(true);
   });
 });
 
