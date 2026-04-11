@@ -51,6 +51,15 @@ function TrackpadPan() {
 function FitBoundsOnce({ rounds }: { rounds: Round[] }) {
   const map = useMap();
   const fitted = useRef(false);
+
+  useEffect(() => {
+    // Leaflet can initialize with wrong dimensions if the container was
+    // hidden or mid-animation. Invalidate after a short delay so tiles
+    // render correctly.
+    const t = setTimeout(() => map.invalidateSize(), 200);
+    return () => clearTimeout(t);
+  }, [map]);
+
   if (!fitted.current && rounds.length > 0) {
     fitted.current = true;
     const bounds = rounds.map((r) => [r.lat, r.lng] as [number, number]);
