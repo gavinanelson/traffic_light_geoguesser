@@ -38,12 +38,36 @@ export default function ShiftScreen({ state, dispatch }: ShiftScreenProps) {
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <div
           style={{
-            flex: "0 0 42%",
+            flex: "0 0 44%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 20,
-            background: "var(--desk-light)",
+            padding: 24,
+            background: `
+              repeating-linear-gradient(
+                87deg,
+                transparent,
+                transparent 3px,
+                rgba(60, 42, 20, 0.08) 3px,
+                rgba(60, 42, 20, 0.08) 6px
+              ),
+              repeating-linear-gradient(
+                2deg,
+                transparent,
+                transparent 40px,
+                rgba(90, 65, 30, 0.06) 40px,
+                rgba(90, 65, 30, 0.06) 41px
+              ),
+              linear-gradient(
+                90deg,
+                #231a0e 0%,
+                #2e2114 15%,
+                #342618 40%,
+                #2e2114 60%,
+                #291d10 85%,
+                #231a0e 100%
+              )
+            `,
           }}
         >
           {currentRound && (

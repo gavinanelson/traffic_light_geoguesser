@@ -47,9 +47,12 @@ export default function WorldMap({
       <MapContainer
         center={[30, 10]}
         zoom={2}
+        minZoom={2}
         style={{ width: "100%", height: "100%" }}
         zoomControl={false}
         attributionControl={false}
+        worldCopyJump={true}
+        maxBoundsViscosity={0}
       >
         <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
         <FitBounds rounds={rounds} />

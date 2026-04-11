@@ -9,7 +9,7 @@ export default function PacketPhoto({ imageSrc, packetId }: PacketPhotoProps) {
   const shortId = packetId.replace(/\D/g, "").slice(-4).padStart(4, "0");
 
   return (
-    <div className="manila" style={{ maxWidth: 380, width: "100%" }}>
+    <div className="manila" style={{ maxWidth: 520, width: "100%" }}>
       <div
         style={{
           padding: "8px 10px 4px",
