@@ -7,6 +7,7 @@ import PacketPhoto from "./PacketPhoto";
 import WorldMapLoader from "./WorldMapLoader";
 import FeedbackOverlay from "./FeedbackOverlay";
 import EnvelopeAnimation from "./EnvelopeAnimation";
+import DeskSurface from "./DeskSurface";
 
 export type ShiftScreenProps = {
   state: GameState;
@@ -58,32 +59,6 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
     dispatch({ type: "DISMISS_FEEDBACK" });
   }, [dispatch]);
 
-  const deskBackground = `
-    repeating-linear-gradient(
-      87deg,
-      transparent,
-      transparent 3px,
-      rgba(60, 42, 20, 0.08) 3px,
-      rgba(60, 42, 20, 0.08) 6px
-    ),
-    repeating-linear-gradient(
-      2deg,
-      transparent,
-      transparent 40px,
-      rgba(90, 65, 30, 0.06) 40px,
-      rgba(90, 65, 30, 0.06) 41px
-    ),
-    linear-gradient(
-      90deg,
-      #231a0e 0%,
-      #2e2114 15%,
-      #342618 40%,
-      #2e2114 60%,
-      #291d10 85%,
-      #231a0e 100%
-    )
-  `;
-
   // The next photo that sits underneath during slide-off
   const nextRound = visualIndex + 1 < state.rounds.length
     ? state.rounds[visualIndex + 1]
@@ -100,53 +75,44 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
 
       <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
         {/* Left panel: photo on desk */}
-        <div
-          style={{
-            flex: "0 0 44%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-            background: deskBackground,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {!showIntro && currentRound && (
-            <div style={{ position: "relative", maxWidth: 520, width: "100%" }}>
-              {/* Next photo underneath (visible during slide-off) */}
-              {slidingOffKey && nextRound && (
-                <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+        <div style={{ flex: "0 0 44%", position: "relative" }}>
+          <DeskSurface>
+            {!showIntro && currentRound && (
+              <div style={{ position: "relative", maxWidth: 520, width: "100%" }}>
+                {/* Next photo underneath (visible during slide-off) */}
+                {slidingOffKey && nextRound && (
+                  <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+                    <PacketPhoto
+                      imageSrc={nextRound.image}
+                      packetId={nextRound.id}
+                      remainingCount={remainingCount - 1}
+                      slideOff={false}
+                    />
+                  </div>
+                )}
+
+                {/* Current photo (slides off on guess) */}
+                <div style={{ position: "relative", zIndex: 2 }}>
                   <PacketPhoto
-                    imageSrc={nextRound.image}
-                    packetId={nextRound.id}
-                    remainingCount={remainingCount - 1}
-                    slideOff={false}
+                    key={currentRound.id}
+                    imageSrc={currentRound.image}
+                    packetId={currentRound.id}
+                    remainingCount={remainingCount}
+                    slideOff={slidingOffKey === currentRound.id}
                   />
                 </div>
-              )}
-
-              {/* Current photo (slides off on guess) */}
-              <div style={{ position: "relative", zIndex: 2 }}>
-                <PacketPhoto
-                  key={currentRound.id}
-                  imageSrc={currentRound.image}
-                  packetId={currentRound.id}
-                  remainingCount={remainingCount}
-                  slideOff={slidingOffKey === currentRound.id}
-                />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Envelope animation — renders the first photo underneath, reveals it */}
-          {showIntro && state.rounds[0] && (
-            <EnvelopeAnimation
-              firstRound={state.rounds[0]}
-              totalRounds={state.rounds.length}
-              onComplete={handleIntroComplete}
-            />
-          )}
+            {/* Envelope animation — renders the first photo underneath, reveals it */}
+            {showIntro && state.rounds[0] && (
+              <EnvelopeAnimation
+                firstRound={state.rounds[0]}
+                totalRounds={state.rounds.length}
+                onComplete={handleIntroComplete}
+              />
+            )}
+          </DeskSurface>
         </div>
 
         {/* Right panel: map + confirm */}
