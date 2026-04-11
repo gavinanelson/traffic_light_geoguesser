@@ -111,8 +111,9 @@ export default function ReviewPage() {
           </p>
           <p>
             brightness {current.scores?.brightness.toFixed(1) ?? "n/a"} | contrast{" "}
-            {current.scores?.contrast.toFixed(1) ?? "n/a"} | edges{" "}
-            {current.scores?.edgeDensity.toFixed(3) ?? "n/a"}
+            {current.scores?.contrast.toFixed(1) ?? "n/a"} | color{" "}
+            {current.scores?.colorfulness.toFixed(1) ?? "n/a"} | dark px{" "}
+            {current.scores?.darkPixelRatio.toFixed(2) ?? "n/a"}
           </p>
         </div>
 

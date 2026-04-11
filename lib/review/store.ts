@@ -21,6 +21,9 @@ export type RawWebcamRecord = {
     brightness: number;
     contrast: number;
     edgeDensity: number;
+    darkPixelRatio: number;
+    colorfulness: number;
+    largeTextLikelihood: number;
     isLikelyTooDark: boolean;
   };
 };

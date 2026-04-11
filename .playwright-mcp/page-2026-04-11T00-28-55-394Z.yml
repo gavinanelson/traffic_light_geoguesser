@@ -1,0 +1,27 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e26] [cursor=pointer]:
+    - img [ref=e27]
+  - alert [ref=e30]
+  - generic [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e33]: PACKET 4 OF 10
+      - generic [ref=e34]: "TIME: 0:20"
+      - generic [ref=e35]: "VERIFIED: 2"
+      - generic [ref=e36]: Verify all intersections before shift handoff
+    - generic [ref=e37]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - generic [ref=e41]: PKT-6339
+          - generic [ref=e42]: PRIORITY
+        - img "Traffic camera photo" [ref=e45]
+        - generic [ref=e47]: UNVERIFIED
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e51]:
+            - generic:
+              - generic:
+                - img
+          - generic [ref=e71]: VERIFIED
+        - generic [ref=e65]:
+          - generic [ref=e66]: Click a marker to select a location
+          - button "Log Location" [disabled] [ref=e67]

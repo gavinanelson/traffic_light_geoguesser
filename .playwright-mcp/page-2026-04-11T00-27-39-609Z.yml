@@ -1,0 +1,17 @@
+- generic [ref=e3]:
+  - heading "Global Emergency Shift" [level=1] [ref=e4]
+  - paragraph [ref=e5]: A coordinated cyberattack has corrupted GPS-linked camera metadata worldwide. Surviving physical maintenance packets have been routed to your desk. Verify as many camera locations as possible before shift handoff.
+  - generic [ref=e6]:
+    - generic [ref=e7]: Field Instructions
+    - list [ref=e8]:
+      - listitem [ref=e9]: An envelope of 10 camera photos has arrived at your desk
+      - listitem [ref=e10]: Select the matching location on the map for each photo
+      - listitem [ref=e11]: Work quickly — your shift timer is running
+      - listitem [ref=e12]: You will be graded on how many you verify correctly out of 10
+  - generic [ref=e13]:
+    - generic [ref=e14]: Shift Duration
+    - generic [ref=e15]:
+      - button "90 SEC" [ref=e16] [cursor=pointer]
+      - button "3 MIN" [ref=e17] [cursor=pointer]
+      - button "5 MIN" [ref=e18] [cursor=pointer]
+  - button "Begin Shift" [ref=e20] [cursor=pointer]

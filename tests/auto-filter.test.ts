@@ -21,6 +21,9 @@ const baseRecord: RawWebcamRecord = {
     brightness: 60,
     contrast: 30,
     edgeDensity: 0.1,
+    darkPixelRatio: 0.05,
+    colorfulness: 24,
+    largeTextLikelihood: 0.02,
     isLikelyTooDark: false
   }
 };
@@ -46,6 +49,33 @@ describe("shouldAutoReject", () => {
 
   it("keeps images that clear both thresholds", () => {
     expect(shouldAutoReject(baseRecord)).toBe(false);
+  });
+
+  it("rejects nearly monochrome images", () => {
+    expect(
+      shouldAutoReject({
+        ...baseRecord,
+        scores: { ...baseRecord.scores!, colorfulness: 4 }
+      })
+    ).toBe(true);
+  });
+
+  it("rejects images with too many near-black pixels", () => {
+    expect(
+      shouldAutoReject({
+        ...baseRecord,
+        scores: { ...baseRecord.scores!, darkPixelRatio: 0.72 }
+      })
+    ).toBe(true);
+  });
+
+  it("rejects images with giant text overlays", () => {
+    expect(
+      shouldAutoReject({
+        ...baseRecord,
+        scores: { ...baseRecord.scores!, largeTextLikelihood: 0.2 }
+      })
+    ).toBe(true);
   });
 });
 
