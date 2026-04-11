@@ -1,5 +1,6 @@
-import type { Round } from "./types";
+import type { GameMode, Round } from "./types";
 import approvedRounds from "../../data/rounds.json";
+import austinRounds from "../../data/rounds-austin.json";
 import rawWebcams from "../../data/raw-webcams.json";
 
 type RawWebcam = {
@@ -12,6 +13,17 @@ type RawWebcam = {
   country: string;
   [key: string]: unknown;
 };
+
+function shuffleRounds(rounds: Round[], rng: () => number): Round[] {
+  const shuffled = [...rounds];
+
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled;
+}
 
 export function mapRawToRound(raw: RawWebcam): Round {
   return {
@@ -26,16 +38,43 @@ export function mapRawToRound(raw: RawWebcam): Round {
   };
 }
 
-export function selectEnvelope(rounds: Round[], count = 10): Round[] {
-  const shuffled = [...rounds];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+export function selectEnvelope(
+  rounds: Round[],
+  count = 10,
+  rng: () => number = Math.random,
+): Round[] {
+  if (rounds.length <= count) {
+    return shuffleRounds(rounds, rng);
   }
-  return shuffled.slice(0, count);
+
+  const pool = [...rounds];
+  const envelope: Round[] = [];
+
+  while (pool.length > 0 && envelope.length < count) {
+    const index = Math.floor(rng() * pool.length);
+    const [selected] = pool.splice(index, 1);
+
+    if (selected) {
+      envelope.push(selected);
+    }
+  }
+
+  return envelope;
+}
+
+function loadGlobalRounds(): Round[] {
+  if (approvedRounds.length > 0) return approvedRounds as Round[];
+  return (rawWebcams as RawWebcam[]).map(mapRawToRound);
+}
+
+export function loadRoundsForMode(mode: GameMode): Round[] {
+  if (mode === "austin") {
+    return austinRounds as Round[];
+  }
+
+  return loadGlobalRounds();
 }
 
 export function loadRounds(): Round[] {
-  if (approvedRounds.length > 0) return approvedRounds as Round[];
-  return (rawWebcams as RawWebcam[]).map(mapRawToRound);
+  return loadRoundsForMode("global");
 }

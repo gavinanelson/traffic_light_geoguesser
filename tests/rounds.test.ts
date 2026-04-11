@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectEnvelope, mapRawToRound } from "../lib/game/rounds";
+import { loadRoundsForMode, selectEnvelope, mapRawToRound } from "../lib/game/rounds";
 import type { Round } from "../lib/game/types";
 
 const fakeRounds: Round[] = Array.from({ length: 20 }, (_, i) => ({
@@ -26,6 +26,13 @@ describe("selectEnvelope", () => {
     expect(envelope).toHaveLength(5);
   });
 
+  it("selects a single round when count is 1", () => {
+    const envelope = selectEnvelope(fakeRounds, 1, () => 0.95);
+
+    expect(envelope).toHaveLength(1);
+    expect(envelope[0]?.id).toBe("city-19");
+  });
+
   it("returns all rounds if pool is smaller than requested count", () => {
     const small = fakeRounds.slice(0, 3);
     const envelope = selectEnvelope(small, 10);
@@ -39,6 +46,13 @@ describe("selectEnvelope", () => {
     selectEnvelope(fakeRounds);
 
     expect(fakeRounds).toEqual(copy);
+  });
+});
+
+
+describe("loadRoundsForMode", () => {
+  it("returns an array for Austin mode", () => {
+    expect(Array.isArray(loadRoundsForMode("austin"))).toBe(true);
   });
 });
 
