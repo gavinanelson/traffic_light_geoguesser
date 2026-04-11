@@ -1,6 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import type { Round } from "../lib/game/types";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(scriptDir, "..");
+const austinRoundDir = path.join(projectRoot, "public/rounds/austin");
+const austinDataPath = path.join(projectRoot, "data/rounds-austin.json");
 
 export type AustinCameraRow = {
   id: string;
@@ -35,15 +42,19 @@ export function mapAustinRowToRound(row: AustinCameraRow): Round {
 }
 
 export async function ensureAustinDirs() {
-  await mkdir("public/rounds/austin", { recursive: true });
-  await mkdir("data", { recursive: true });
+  await mkdir(austinRoundDir, { recursive: true });
+  await mkdir(path.dirname(austinDataPath), { recursive: true });
 }
 
 async function main() {
   await ensureAustinDirs();
-  await writeFile("data/rounds-austin.json", "[]\n");
+  await writeFile(austinDataPath, "[]\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const directRunTarget = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href
+  : "";
+
+if (import.meta.url === directRunTarget) {
   void main();
 }
