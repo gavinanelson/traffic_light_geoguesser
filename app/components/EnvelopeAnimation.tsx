@@ -52,6 +52,7 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
           packetId={firstRound.id}
           remainingCount={totalRounds}
           slideOff={false}
+          hideStack={true}
         />
       </div>
 

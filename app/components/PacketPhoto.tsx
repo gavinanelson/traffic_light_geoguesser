@@ -5,20 +5,21 @@ export type PacketPhotoProps = {
   packetId: string;
   remainingCount: number;
   slideOff: boolean;
+  hideStack?: boolean;
 };
 
-export default function PacketPhoto({ imageSrc, packetId, remainingCount, slideOff }: PacketPhotoProps) {
+export default function PacketPhoto({ imageSrc, packetId, remainingCount, slideOff, hideStack }: PacketPhotoProps) {
   const shortId = packetId.replace(/\D/g, "").slice(-4).padStart(4, "0");
 
   return (
     <div className="photo-stack" style={{ maxWidth: 520, width: "100%" }}>
       {/* Stack shadow cards (depth illusion) */}
-      {remainingCount > 2 && (
+      {!hideStack && remainingCount > 2 && (
         <div className="photo-stack-card photo-stack-shadow-2">
           <div className="manila" style={{ width: "100%", height: "100%" }} />
         </div>
       )}
-      {remainingCount > 1 && (
+      {!hideStack && remainingCount > 1 && (
         <div className="photo-stack-card photo-stack-shadow-1">
           <div className="manila" style={{ width: "100%", height: "100%" }} />
         </div>

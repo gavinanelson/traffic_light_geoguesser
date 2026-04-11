@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Round, RoundFeedback } from "../../lib/game/types";
@@ -19,6 +19,33 @@ function markerState(
   const result = roundResults.find((r) => r.correctId === round.id);
   if (!result) return "unguessed";
   return result.correct ? "correct" : "incorrect";
+}
+
+/** Convert two-finger trackpad scroll into pan. Ctrl+scroll zooms. */
+function TrackpadPan() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl/Cmd + scroll = zoom
+        const delta = e.deltaY > 0 ? -1 : 1;
+        map.zoomIn(delta, { animate: true });
+      } else {
+        // Normal scroll = pan
+        map.panBy([e.deltaX, e.deltaY], { animate: false });
+      }
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+    return () => container.removeEventListener("wheel", onWheel);
+  }, [map]);
+
+  return null;
 }
 
 function FitBoundsOnce({ rounds }: { rounds: Round[] }) {
@@ -63,6 +90,10 @@ export default function WorldMap({
         worldCopyJump={true}
         maxBounds={[[-85, -Infinity], [85, Infinity]]}
         maxBoundsViscosity={1.0}
+        scrollWheelZoom={false}
+        touchZoom={true}
+        doubleClickZoom={true}
+        inertia={true}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -71,6 +102,7 @@ export default function WorldMap({
           updateWhenIdle={false}
         />
         <FitBoundsOnce rounds={rounds} />
+        <TrackpadPan />
 
         {sorted.map((round) => {
           const state = markerState(round, roundResults);
