@@ -51,11 +51,12 @@ export default function WorldMap({
         center={[30, 10]}
         zoom={2}
         minZoom={2}
-        style={{ width: "100%", height: "100%", background: "#1a1a2e" }}
+        style={{ width: "100%", height: "100%", background: "#000" }}
         zoomControl={false}
         attributionControl={false}
         worldCopyJump={true}
-        maxBoundsViscosity={0}
+        maxBounds={[[-85, -Infinity], [85, Infinity]]}
+        maxBoundsViscosity={1.0}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
