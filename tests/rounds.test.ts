@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import austinRounds from "../data/rounds-austin.json";
+import rawWebcams from "../data/raw-webcams.json";
 import { loadRoundsForMode, selectEnvelope, mapRawToRound } from "../lib/game/rounds";
 import type { Round } from "../lib/game/types";
 
@@ -51,8 +53,15 @@ describe("selectEnvelope", () => {
 
 
 describe("loadRoundsForMode", () => {
-  it("returns an array for Austin mode", () => {
-    expect(Array.isArray(loadRoundsForMode("austin"))).toBe(true);
+  it("returns the Austin dataset for Austin mode", () => {
+    expect(loadRoundsForMode("austin")).toBe(austinRounds);
+  });
+
+  it("falls back to mapped raw webcams for global mode", () => {
+    const globalRounds = loadRoundsForMode("global");
+
+    expect(globalRounds).toHaveLength(rawWebcams.length);
+    expect(globalRounds[0]).toEqual(mapRawToRound(rawWebcams[0]));
   });
 });
 
