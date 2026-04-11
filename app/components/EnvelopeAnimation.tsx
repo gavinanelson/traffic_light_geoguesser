@@ -1,32 +1,39 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { Round } from "../../lib/game/types";
+import PacketPhoto from "./PacketPhoto";
 
 type EnvelopeAnimationProps = {
+  firstRound: Round;
+  totalRounds: number;
   onComplete: () => void;
 };
 
-type Phase = "enter" | "open" | "drop" | "done";
+type Phase = "closed" | "opening" | "sliding" | "done";
 
-export default function EnvelopeAnimation({ onComplete }: EnvelopeAnimationProps) {
-  const [phase, setPhase] = useState<Phase>("enter");
+export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete }: EnvelopeAnimationProps) {
+  const [phase, setPhase] = useState<Phase>("closed");
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase("open"), 800),
-      setTimeout(() => setPhase("drop"), 1800),
+      // Start opening the flap
+      setTimeout(() => setPhase("opening"), 600),
+      // Envelope slides down off the photos
+      setTimeout(() => setPhase("sliding"), 1400),
+      // Animation complete
       setTimeout(() => {
         setPhase("done");
         onComplete();
-      }, 2300),
+      }, 2200),
     ];
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);
 
   if (phase === "done") return null;
 
-  const isDrop = phase === "drop";
-  const isOpen = phase === "open" || isDrop;
+  const isOpening = phase === "opening" || phase === "sliding";
+  const isSliding = phase === "sliding";
 
   return (
     <div
@@ -37,143 +44,120 @@ export default function EnvelopeAnimation({ onComplete }: EnvelopeAnimationProps
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(10, 8, 4, 0.85)",
+        overflow: "hidden",
       }}
     >
-      {/* Photos rising out — shown during open phase, hidden during drop */}
-      {isOpen && !isDrop && (
-        <div
-          className="photos-rising"
-          style={{
-            position: "absolute",
-            zIndex: 2,
-          }}
-        >
-          <div style={{ position: "relative", width: 200, height: 130 }}>
+      {/* Photos underneath — always in place, revealed as envelope slides away */}
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 520, width: "100%" }}>
+        <PacketPhoto
+          imageSrc={firstRound.image}
+          packetId={firstRound.id}
+          remainingCount={totalRounds}
+          slideOff={false}
+        />
+      </div>
+
+      {/* Envelope on top — covers the photos, then slides down */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: isSliding ? "transform 0.7s ease-in, opacity 0.7s ease-in" : "none",
+          transform: isSliding ? "translateY(110%)" : "translateY(0)",
+          opacity: isSliding ? 0 : 1,
+        }}
+      >
+        <div style={{ position: "relative", width: 340 }}>
+          {/* Envelope body */}
+          <div
+            style={{
+              background: "var(--manila)",
+              borderRadius: 6,
+              height: 260,
+              position: "relative",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Label */}
             <div
               style={{
                 position: "absolute",
-                inset: 0,
-                background: "#3a3020",
-                borderRadius: 3,
-                transform: "rotate(2deg) translate(4px, 4px)",
-                border: "1px solid #5a4a30",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "#4a4030",
-                borderRadius: 3,
-                transform: "rotate(-1deg) translate(2px, 2px)",
-                border: "1px solid #5a4a30",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "#5a5040",
-                borderRadius: 3,
-                border: "1px solid #6a5a40",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                top: 30,
+                left: "50%",
+                transform: "translateX(-50%)",
+                textAlign: "center",
+                width: "80%",
               }}
             >
-              <span
+              <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "var(--text-muted)",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#3d2e1a",
                   textTransform: "uppercase",
-                  letterSpacing: "0.1em",
+                  letterSpacing: "0.15em",
                 }}
               >
-                10 Photos
-              </span>
+                Classified
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "#6b5530",
+                  marginTop: 6,
+                }}
+              >
+                Emergency Camera Verification
+              </div>
+              <div
+                className="stamp stamp-danger"
+                style={{ fontSize: 11, marginTop: 14 }}
+              >
+                Priority
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "#6b5530",
+                  marginTop: 14,
+                }}
+              >
+                {totalRounds} PHOTOS ENCLOSED
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Entire envelope — flap + body as one unit so they drop together */}
-      <div
-        className={isDrop ? "envelope-dropping" : "envelope-intro"}
-        style={{ position: "relative", width: 320, zIndex: 1 }}
-      >
-        {/* Flap — sits on top of body, opens via rotateX */}
-        <div
-          style={{
-            height: 60,
-            perspective: 400,
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
+          {/* Flap — triangle at the top, points down when closed, flips up to open */}
           <div
-            className={isOpen ? "envelope-flap-open" : ""}
             style={{
               position: "absolute",
-              bottom: 0,
+              top: 0,
               left: 0,
               right: 0,
-              height: 60,
-              background: "linear-gradient(180deg, #b89850 0%, var(--manila) 100%)",
-              clipPath: "polygon(0 100%, 50% 0, 100% 100%)",
-              transformOrigin: "bottom center",
-            }}
-          />
-        </div>
-
-        {/* Body */}
-        <div
-          style={{
-            background: "var(--manila)",
-            height: 180,
-            borderRadius: "0 0 6px 6px",
-            position: "relative",
-            boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: 20,
-              left: "50%",
-              transform: "translateX(-50%)",
-              textAlign: "center",
+              height: 80,
+              perspective: 600,
+              zIndex: 3,
             }}
           >
             <div
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#3d2e1a",
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
+                width: "100%",
+                height: 80,
+                background: "linear-gradient(180deg, var(--manila) 0%, #b89850 100%)",
+                clipPath: "polygon(0 0, 100% 0, 50% 100%)",
+                transformOrigin: "top center",
+                transition: isOpening ? "transform 0.5s ease-in-out" : "none",
+                transform: isOpening ? "rotateX(-180deg)" : "rotateX(0deg)",
               }}
-            >
-              Classified
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "#6b5530",
-                marginTop: 4,
-              }}
-            >
-              Emergency Camera Verification
-            </div>
-            <div
-              className="stamp stamp-danger"
-              style={{ fontSize: 11, marginTop: 12 }}
-            >
-              Priority
-            </div>
+            />
           </div>
         </div>
       </div>

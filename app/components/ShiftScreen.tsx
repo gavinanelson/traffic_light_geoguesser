@@ -139,8 +139,14 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
             </div>
           )}
 
-          {/* Envelope animation overlay */}
-          {showIntro && <EnvelopeAnimation onComplete={handleIntroComplete} />}
+          {/* Envelope animation — renders the first photo underneath, reveals it */}
+          {showIntro && state.rounds[0] && (
+            <EnvelopeAnimation
+              firstRound={state.rounds[0]}
+              totalRounds={state.rounds.length}
+              onComplete={handleIntroComplete}
+            />
+          )}
         </div>
 
         {/* Right panel: map + confirm */}
