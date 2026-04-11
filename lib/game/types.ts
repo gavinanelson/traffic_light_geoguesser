@@ -12,6 +12,7 @@ export type Round = {
   country: string;
   source: RoundSource;
   mode?: GameMode;
+  restored?: boolean;
   locationName?: string;
   primaryStreet?: string;
   crossStreet?: string;
