@@ -11,7 +11,7 @@ export type FeedbackOverlayProps = {
 
 export default function FeedbackOverlay({ feedback, rounds, onDismiss }: FeedbackOverlayProps) {
   useEffect(() => {
-    const timer = setTimeout(onDismiss, 1800);
+    const timer = setTimeout(onDismiss, 1200);
     return () => clearTimeout(timer);
   }, [onDismiss]);
 

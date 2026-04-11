@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { GameState, GameAction } from "../../lib/game/types";
 import HUD from "./HUD";
 import PacketPhoto from "./PacketPhoto";
@@ -11,41 +11,51 @@ import EnvelopeAnimation from "./EnvelopeAnimation";
 export type ShiftScreenProps = {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
-  onTimerStart: () => void;
+  onTimerStart?: () => void;
 };
 
 export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
-  const [slidingOff, setSlidingOff] = useState(false);
-  const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0);
 
-  const currentRound = state.rounds[displayedRoundIndex];
-  const remainingCount = state.rounds.length - state.currentRoundIndex;
+  // Track which photo is sliding off (by key) so we can show next underneath
+  const [slidingOffKey, setSlidingOffKey] = useState<string | null>(null);
+  // The photo index we're visually showing (advances immediately on guess)
+  const [visualIndex, setVisualIndex] = useState(0);
+  const nextIndexRef = useRef(0);
 
-  // Sync displayedRoundIndex with game state (after slide-off completes)
-  useEffect(() => {
-    if (!slidingOff && displayedRoundIndex !== state.currentRoundIndex) {
-      setDisplayedRoundIndex(state.currentRoundIndex);
-    }
-  }, [state.currentRoundIndex, slidingOff, displayedRoundIndex]);
+  const currentRound = state.rounds[visualIndex];
+  const remainingCount = state.rounds.length - visualIndex;
 
   const handleIntroComplete = useCallback(() => {
     setShowIntro(false);
-    onTimerStart();
+    onTimerStart?.();
   }, [onTimerStart]);
 
   const handleConfirm = useCallback(() => {
     if (!selectedId) return;
-    // Start slide-off animation
-    setSlidingOff(true);
+
+    const currentKey = state.rounds[visualIndex]?.id;
+    setSlidingOffKey(currentKey);
+
+    // Dispatch the guess
     dispatch({ type: "SUBMIT_GUESS", chosenId: selectedId });
     setSelectedId(null);
-  }, [selectedId, dispatch]);
+
+    // Advance visual to next photo immediately
+    const next = visualIndex + 1;
+    nextIndexRef.current = next;
+
+    // After slide-off animation completes (350ms), clear the sliding state
+    // and show the next photo
+    setTimeout(() => {
+      setSlidingOffKey(null);
+      setVisualIndex(nextIndexRef.current);
+    }, 350);
+  }, [selectedId, dispatch, visualIndex, state.rounds]);
 
   const handleDismiss = useCallback(() => {
     dispatch({ type: "DISMISS_FEEDBACK" });
-    setSlidingOff(false);
   }, [dispatch]);
 
   const deskBackground = `
@@ -74,10 +84,15 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
     )
   `;
 
+  // The next photo that sits underneath during slide-off
+  const nextRound = visualIndex + 1 < state.rounds.length
+    ? state.rounds[visualIndex + 1]
+    : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <HUD
-        currentRound={state.currentRoundIndex + 1}
+        currentRound={visualIndex + 1}
         totalRounds={state.rounds.length}
         timeRemaining={state.timeRemaining}
         correct={state.correct}
@@ -98,12 +113,30 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
           }}
         >
           {!showIntro && currentRound && (
-            <PacketPhoto
-              imageSrc={currentRound.image}
-              packetId={currentRound.id}
-              remainingCount={remainingCount}
-              slideOff={slidingOff}
-            />
+            <div style={{ position: "relative", maxWidth: 520, width: "100%" }}>
+              {/* Next photo underneath (visible during slide-off) */}
+              {slidingOffKey && nextRound && (
+                <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+                  <PacketPhoto
+                    imageSrc={nextRound.image}
+                    packetId={nextRound.id}
+                    remainingCount={remainingCount - 1}
+                    slideOff={false}
+                  />
+                </div>
+              )}
+
+              {/* Current photo (slides off on guess) */}
+              <div style={{ position: "relative", zIndex: 2 }}>
+                <PacketPhoto
+                  key={currentRound.id}
+                  imageSrc={currentRound.image}
+                  packetId={currentRound.id}
+                  remainingCount={remainingCount}
+                  slideOff={slidingOffKey === currentRound.id}
+                />
+              </div>
+            </div>
           )}
 
           {/* Envelope animation overlay */}
@@ -157,7 +190,7 @@ export default function ShiftScreen({ state, dispatch, onTimerStart }: ShiftScre
             </span>
             <button
               className="btn btn-primary"
-              disabled={!selectedId || state.feedback !== null || showIntro}
+              disabled={!selectedId || slidingOffKey !== null || showIntro}
               onClick={handleConfirm}
             >
               Log Location
