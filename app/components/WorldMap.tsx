@@ -116,7 +116,7 @@ export default function WorldMap({
     lastRoundIds.current = currentIds;
     if (!isAustin) {
       const envelopeIds = new Set(rounds.map((r) => r.id));
-      distractors.current = pickDistractors(envelopeIds, 10);
+      distractors.current = pickDistractors(envelopeIds, 20);
     } else {
       distractors.current = [];
     }
