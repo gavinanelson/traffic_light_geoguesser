@@ -17,11 +17,8 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
 
   useEffect(() => {
     const timers = [
-      // Start opening the flap
       setTimeout(() => setPhase("opening"), 600),
-      // Envelope slides down off the photos
       setTimeout(() => setPhase("sliding"), 1400),
-      // Animation complete
       setTimeout(() => {
         setPhase("done");
         onComplete();
@@ -45,9 +42,10 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
+        padding: 24,
       }}
     >
-      {/* Photos underneath — always in place, revealed as envelope slides away */}
+      {/* Photos underneath — always in place, hidden by envelope until it slides */}
       <div style={{ position: "relative", zIndex: 1, maxWidth: 520, width: "100%" }}>
         <PacketPhoto
           imageSrc={firstRound.image}
@@ -57,7 +55,7 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
         />
       </div>
 
-      {/* Envelope on top — covers the photos, then slides down */}
+      {/* Envelope on top — same size as the photo area, fully covers it */}
       <div
         style={{
           position: "absolute",
@@ -66,20 +64,22 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          padding: 24,
           transition: isSliding ? "transform 0.7s ease-in, opacity 0.7s ease-in" : "none",
           transform: isSliding ? "translateY(110%)" : "translateY(0)",
           opacity: isSliding ? 0 : 1,
         }}
       >
-        <div style={{ position: "relative", width: 340 }}>
-          {/* Envelope body */}
+        <div style={{ position: "relative", maxWidth: 520, width: "100%" }}>
+          {/* Envelope body — matches the photo container size */}
           <div
             style={{
               background: "var(--manila)",
               borderRadius: 6,
-              height: 260,
+              width: "100%",
+              aspectRatio: "4 / 3",
               position: "relative",
-              boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
               overflow: "hidden",
             }}
           >
@@ -87,17 +87,19 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
             <div
               style={{
                 position: "absolute",
-                top: 30,
-                left: "50%",
-                transform: "translateX(-50%)",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
                 textAlign: "center",
-                width: "80%",
+                padding: 24,
               }}
             >
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 14,
+                  fontSize: 18,
                   fontWeight: 700,
                   color: "#3d2e1a",
                   textTransform: "uppercase",
@@ -109,25 +111,25 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 12,
                   color: "#6b5530",
-                  marginTop: 6,
+                  marginTop: 8,
                 }}
               >
                 Emergency Camera Verification
               </div>
               <div
                 className="stamp stamp-danger"
-                style={{ fontSize: 11, marginTop: 14 }}
+                style={{ fontSize: 13, marginTop: 18 }}
               >
                 Priority
               </div>
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 12,
                   color: "#6b5530",
-                  marginTop: 14,
+                  marginTop: 18,
                 }}
               >
                 {totalRounds} PHOTOS ENCLOSED
@@ -142,7 +144,7 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
               top: 0,
               left: 0,
               right: 0,
-              height: 80,
+              height: "25%",
               perspective: 600,
               zIndex: 3,
             }}
@@ -150,7 +152,7 @@ export default function EnvelopeAnimation({ firstRound, totalRounds, onComplete 
             <div
               style={{
                 width: "100%",
-                height: 80,
+                height: "100%",
                 background: "linear-gradient(180deg, var(--manila) 0%, #b89850 100%)",
                 clipPath: "polygon(0 0, 100% 0, 50% 100%)",
                 transformOrigin: "top center",
