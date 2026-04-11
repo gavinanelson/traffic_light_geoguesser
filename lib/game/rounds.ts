@@ -1,4 +1,6 @@
 import type { Round } from "./types";
+import approvedRounds from "../../data/rounds.json";
+import rawWebcams from "../../data/raw-webcams.json";
 
 type RawWebcam = {
   id: string;
@@ -33,12 +35,7 @@ export function selectEnvelope(rounds: Round[], count = 10): Round[] {
   return shuffled.slice(0, count);
 }
 
-export async function loadRounds(): Promise<Round[]> {
-  const roundsMod = await import("../../data/rounds.json");
-  const rounds: Round[] = roundsMod.default;
-  if (rounds.length > 0) return rounds;
-
-  const rawMod = await import("../../data/raw-webcams.json");
-  const raw: RawWebcam[] = rawMod.default;
-  return raw.map(mapRawToRound);
+export function loadRounds(): Round[] {
+  if (approvedRounds.length > 0) return approvedRounds as Round[];
+  return (rawWebcams as RawWebcam[]).map(mapRawToRound);
 }
