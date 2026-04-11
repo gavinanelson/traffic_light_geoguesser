@@ -1,7 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import austinRounds from "../data/rounds-austin.json";
 import rawWebcams from "../data/raw-webcams.json";
-import { GET } from "../app/api/envelope/route";
 import { requestEnvelope } from "../lib/game/envelope-client";
 import { loadRoundsForMode, mapRawToRound } from "../lib/game/rounds";
 import type { Round } from "../lib/game/types";
@@ -18,6 +17,19 @@ const fakeRounds: Round[] = [
     source: "windy",
   },
 ];
+
+async function importRouteWithMocks(
+  loadRoundsForModeMock: ReturnType<typeof vi.fn>,
+  selectEnvelopeMock: ReturnType<typeof vi.fn>,
+) {
+  vi.resetModules();
+  vi.doMock("../lib/game/rounds", () => ({
+    loadRoundsForMode: loadRoundsForModeMock,
+    selectEnvelope: selectEnvelopeMock,
+  }));
+
+  return import("../app/api/envelope/route");
+}
 
 describe("requestEnvelope", () => {
   it("requests a mode-aware envelope from the server route", async () => {
@@ -53,11 +65,57 @@ describe("loadRoundsForMode", () => {
 });
 
 describe("GET /api/envelope", () => {
-  it("returns a mode-specific 503 for Austin mode when no rounds exist", async () => {
+  it("returns a mode-specific 503 when Austin mode has no rounds", async () => {
+    const loadRoundsForModeMock = vi.fn(() => []);
+    const selectEnvelopeMock = vi.fn();
+    const { GET } = await importRouteWithMocks(loadRoundsForModeMock, selectEnvelopeMock);
+
     const response = await GET(new Request("http://localhost/api/envelope?mode=austin&count=1"));
+    const body = (await response.json()) as { error: string };
 
     expect(response.status).toBe(503);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
-    await expect(response.json()).resolves.toEqual({ error: "No Austin rounds available" });
+    expect(body).toEqual({ error: "No Austin rounds available" });
+    expect(loadRoundsForModeMock).toHaveBeenCalledWith("austin");
+    expect(selectEnvelopeMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a no-store envelope response for Austin mode", async () => {
+    const rounds = [
+      {
+        id: "austin-1",
+        image: "/rounds/austin/1.jpg",
+        lat: 30.25,
+        lng: -97.75,
+        city: "Austin",
+        region: "Texas",
+        country: "USA",
+        source: "austin" as const,
+        mode: "austin" as const,
+      },
+      {
+        id: "austin-2",
+        image: "/rounds/austin/2.jpg",
+        lat: 30.26,
+        lng: -97.76,
+        city: "Austin",
+        region: "Texas",
+        country: "USA",
+        source: "austin" as const,
+        mode: "austin" as const,
+      },
+    ];
+    const loadRoundsForModeMock = vi.fn(() => rounds);
+    const selectEnvelopeMock = vi.fn((loadedRounds: Round[], count: number) => loadedRounds.slice(0, count));
+    const { GET } = await importRouteWithMocks(loadRoundsForModeMock, selectEnvelopeMock);
+
+    const response = await GET(new Request("http://localhost/api/envelope?mode=austin&count=1"));
+    const body = (await response.json()) as { rounds: Round[] };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(body.rounds).toEqual([rounds[0]]);
+    expect(loadRoundsForModeMock).toHaveBeenCalledWith("austin");
+    expect(selectEnvelopeMock).toHaveBeenCalledWith(rounds, 1);
   });
 });
